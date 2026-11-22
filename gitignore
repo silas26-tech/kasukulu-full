@@ -6,7 +6,5 @@ coverage/
 *.log
 .env*
 !.env.example
-tsconfig.json
 untitled-1.tsx
-vite.config.ts
 untitled.tsx

@@ -1153,6 +1153,9 @@ async function startServer() {
     app.use(
       express.static(distPath, {
         setHeaders: (res, filePath) => {
+          if (filePath.toLowerCase().endsWith(".pdf")) {
+            res.setHeader("Cache-Control", "public, max-age=86400");
+          }
           if (
             filePath.endsWith("index.html") ||
             filePath.endsWith("sw.js") ||
@@ -1166,7 +1169,17 @@ async function startServer() {
         },
       })
     );
-    app.get("*", (_req, res) => {
+    app.get("*", (req, res) => {
+      // A missing paper/asset must be a real 404, not the app page, otherwise the
+      // PDF viewer (and the offline cache) would store HTML pretending to be a PDF.
+      if (
+        req.path.startsWith("/papers/") ||
+        req.path.startsWith("/assets/") ||
+        /\.[a-z0-9]{2,5}$/i.test(req.path)
+      ) {
+        res.status(404).type("text/plain").send("Not found");
+        return;
+      }
       res.setHeader(
         "Cache-Control",
         "no-store, no-cache, must-revalidate, proxy-revalidate"

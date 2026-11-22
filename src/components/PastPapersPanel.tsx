@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertCircle,
   ArrowLeft,
   CheckCircle2,
+  CloudDownload,
   Download,
   ExternalLink,
   Eye,
@@ -20,6 +21,19 @@ import {
   type PastPaperNumber,
   type PastPaperQuestion,
 } from "../data/eczPastPapers";
+
+// Must match cacheName in vite.config.ts (workbox runtimeCaching).
+const PAPER_CACHE_NAME = "ecz-papers";
+type OfflineState = "idle" | "saving" | "saved" | "error";
+
+// Embedded PDFs are unreliable on phones (iOS shows only page 1), so default them off.
+function isSmallScreen(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(max-width: 767px)").matches
+  );
+}
 
 interface PastPapersPanelProps {
   defaultGrade: GradeLevel;
@@ -127,7 +141,8 @@ export function PastPapersPanel({
     "All"
   );
   const [selectedPaperId, setSelectedPaperId] = useState<string | null>(null);
-  const [showPdfViewer, setShowPdfViewer] = useState<boolean>(true);
+  const [showPdfViewer, setShowPdfViewer] = useState<boolean>(() => !isSmallScreen());
+  const [offlineStates, setOfflineStates] = useState<Record<string, OfflineState>>({});
   const [revealedGuides, setRevealedGuides] = useState<Record<string, boolean>>(
     {}
   );
@@ -159,6 +174,45 @@ export function PastPapersPanel({
 
   const activePaper: EczPastPaper | null =
     allPapers.find((p) => p.id === selectedPaperId) ?? null;
+
+  const activePdfUrl = activePaper?.pdfUrl;
+  const activePaperId = activePaper?.id;
+
+  // Check whether the open paper is already saved on this device.
+  useEffect(() => {
+    if (!activePdfUrl || !activePaperId || typeof caches === "undefined") return;
+    let cancelled = false;
+    caches
+      .open(PAPER_CACHE_NAME)
+      .then((cache) => cache.match(activePdfUrl))
+      .then((hit) => {
+        if (!cancelled && hit) {
+          setOfflineStates((prev) => ({ ...prev, [activePaperId]: "saved" }));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [activePdfUrl, activePaperId]);
+
+  const savePaperOffline = async (paperId: string, url: string) => {
+    if (typeof caches === "undefined") {
+      setOfflineStates((prev) => ({ ...prev, [paperId]: "error" }));
+      return;
+    }
+    setOfflineStates((prev) => ({ ...prev, [paperId]: "saving" }));
+    try {
+      const res = await fetch(url);
+      const type = res.headers.get("content-type") ?? "";
+      if (!res.ok || !type.includes("pdf")) throw new Error("Not a PDF");
+      const cache = await caches.open(PAPER_CACHE_NAME);
+      await cache.put(url, res);
+      setOfflineStates((prev) => ({ ...prev, [paperId]: "saved" }));
+    } catch {
+      setOfflineStates((prev) => ({ ...prev, [paperId]: "error" }));
+    }
+  };
 
   const toggleGuide = (key: string) => {
     setRevealedGuides((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -258,6 +312,23 @@ export function PastPapersPanel({
                   <ExternalLink className="w-3.5 h-3.5" />
                   Open Full PDF
                 </a>
+                <button
+                  type="button"
+                  disabled={offlineStates[activePaper.id] === "saving"}
+                  onClick={() =>
+                    void savePaperOffline(activePaper.id, activePaper.pdfUrl as string)
+                  }
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-medium transition-colors whitespace-nowrap cursor-pointer disabled:opacity-60"
+                >
+                  <CloudDownload className="w-3.5 h-3.5" />
+                  {offlineStates[activePaper.id] === "saved"
+                    ? "Saved offline ✓"
+                    : offlineStates[activePaper.id] === "saving"
+                    ? "Saving…"
+                    : offlineStates[activePaper.id] === "error"
+                    ? "Couldn't save, retry"
+                    : "Save for offline"}
+                </button>
                 <a
                   href={activePaper.pdfUrl}
                   download={`${activePaper.id}.pdf`}
@@ -284,8 +355,20 @@ export function PastPapersPanel({
             <iframe
               src={`${activePaper.pdfUrl}#view=FitH`}
               title={`${activePaper.title} PDF`}
-              className="w-full h-[760px] sm:h-[860px] bg-white"
+              className="w-full h-[70vh] sm:h-[860px] bg-white"
             />
+            <div className="px-4 py-2.5 bg-white border-t border-slate-200 text-[11px] text-slate-600">
+              Not showing on your phone?{" "}
+              <a
+                href={activePaper.pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-emerald-800 underline"
+              >
+                Open the PDF in a new tab
+              </a>
+              .
+            </div>
           </div>
         )}
 
@@ -606,7 +689,7 @@ export function PastPapersPanel({
               type="button"
               onClick={() => {
                 setSelectedPaperId(paper.id);
-                setShowPdfViewer(true);
+                setShowPdfViewer(!isSmallScreen());
               }}
               className="w-full text-left py-3.5 px-3 hover:bg-slate-50 transition-colors flex items-start justify-between gap-3 cursor-pointer"
             >
