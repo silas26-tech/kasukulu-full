@@ -32,6 +32,7 @@ import {
   parseLocalDateKey,
   type StudyCalendarState,
 } from "../data/studyCalendar";
+import { DailyGoalCard } from "./DailyGoalCard";
 import { TutorPortrait } from "./TutorPortrait";
 import type { StudyTab } from "./RightStudyPanel";
 import deskBannerImg from "../assets/images/banner_kasukulu_desk_1794757601425.jpg";
@@ -334,6 +335,14 @@ export function HomeHub({
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </section>
+
+      {/* Daily study goal */}
+      <DailyGoalCard
+        progress={progress}
+        onContinue={() =>
+          onOpenDestination({ tab: "blackboard", voiceMode: "live" })
+        }
+      />
 
       {/* Streak Milestones & Rewards */}
       <section aria-label="Streak Milestones" className="space-y-3">
