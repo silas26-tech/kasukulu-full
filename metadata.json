@@ -1,0 +1,11 @@
+{
+  "name": "Kasukulu",
+  "description": "Personalized AI voice tutors for Zambian learners across Grade 7, Grade 9, and Grade 12 ECZ subjects.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

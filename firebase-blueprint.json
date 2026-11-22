@@ -1,0 +1,118 @@
+{
+  "entities": {
+    "CompetitionEntry": {
+      "title": "CompetitionEntry",
+      "description": "An official in-app marked nationwide competition submission with learner name, school, province, grade, and score.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Authenticated learner UID who submitted the entry."
+        },
+        "learnerName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Learner full name recorded on the nationwide leaderboard."
+        },
+        "schoolName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120,
+          "description": "School name recorded for the learner and top schools table."
+        },
+        "province": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 40,
+          "description": "Zambian province of the learner's school."
+        },
+        "grade": {
+          "type": "string",
+          "enum": ["Grade 7", "Grade 9", "Grade 12"],
+          "description": "ECZ grade category."
+        },
+        "competitionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Identifier of the nationwide competition test."
+        },
+        "competitionTitle": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120,
+          "description": "Display title of the nationwide competition test."
+        },
+        "totalScore": {
+          "type": "integer",
+          "description": "Marks awarded after in-app marking."
+        },
+        "maxScore": {
+          "type": "integer",
+          "description": "Maximum possible marks on the competition test."
+        },
+        "percentage": {
+          "type": "integer",
+          "description": "Percentage score (0 to 100)."
+        },
+        "timeTakenSeconds": {
+          "type": "integer",
+          "description": "Time taken by the learner to complete the test in seconds."
+        },
+        "questionsCorrect": {
+          "type": "integer",
+          "description": "Number of questions answered with full or partial pass marks."
+        },
+        "questionsTotal": {
+          "type": "integer",
+          "description": "Total number of questions in the competition."
+        },
+        "markedSummary": {
+          "type": "string",
+          "maxLength": 400,
+          "description": "Concise in-app examiner summary for the submission."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["official"],
+          "description": "Publication status of the marked leaderboard entry."
+        },
+        "submittedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the marked submission was recorded."
+        }
+      },
+      "required": [
+        "uid",
+        "learnerName",
+        "schoolName",
+        "province",
+        "grade",
+        "competitionId",
+        "competitionTitle",
+        "totalScore",
+        "maxScore",
+        "percentage",
+        "timeTakenSeconds",
+        "questionsCorrect",
+        "questionsTotal",
+        "markedSummary",
+        "status",
+        "submittedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/competition_entries/{entryId}": {
+      "schema": {
+        "$ref": "#/entities/CompetitionEntry"
+      },
+      "description": "Nationwide competition scores with learner names and schools."
+    }
+  }
+}

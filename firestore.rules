@@ -1,0 +1,120 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidCompetitionEntry(data) {
+      return data.keys().hasAll([
+          'uid',
+          'learnerName',
+          'schoolName',
+          'province',
+          'grade',
+          'competitionId',
+          'competitionTitle',
+          'totalScore',
+          'maxScore',
+          'percentage',
+          'timeTakenSeconds',
+          'questionsCorrect',
+          'questionsTotal',
+          'markedSummary',
+          'status',
+          'submittedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid',
+          'learnerName',
+          'schoolName',
+          'province',
+          'grade',
+          'competitionId',
+          'competitionTitle',
+          'totalScore',
+          'maxScore',
+          'percentage',
+          'timeTakenSeconds',
+          'questionsCorrect',
+          'questionsTotal',
+          'markedSummary',
+          'status',
+          'submittedAt'
+        ])
+        && data.uid is string
+        && data.uid.size() >= 1
+        && data.uid.size() <= 128
+        && data.uid == request.auth.uid
+        && data.learnerName is string
+        && data.learnerName.size() >= 2
+        && data.learnerName.size() <= 80
+        && data.schoolName is string
+        && data.schoolName.size() >= 2
+        && data.schoolName.size() <= 120
+        && data.province is string
+        && data.province.size() >= 2
+        && data.province.size() <= 40
+        && data.grade in ['Grade 7', 'Grade 9', 'Grade 12']
+        && isValidId(data.competitionId)
+        && data.competitionTitle is string
+        && data.competitionTitle.size() >= 3
+        && data.competitionTitle.size() <= 120
+        && data.maxScore is int
+        && data.maxScore >= 1
+        && data.maxScore <= 100
+        && data.totalScore is int
+        && data.totalScore >= 0
+        && data.totalScore <= data.maxScore
+        && data.percentage is int
+        && data.percentage >= 0
+        && data.percentage <= 100
+        && data.timeTakenSeconds is int
+        && data.timeTakenSeconds >= 1
+        && data.timeTakenSeconds <= 7200
+        && data.questionsTotal is int
+        && data.questionsTotal >= 1
+        && data.questionsTotal <= 50
+        && data.questionsCorrect is int
+        && data.questionsCorrect >= 0
+        && data.questionsCorrect <= data.questionsTotal
+        && data.markedSummary is string
+        && data.markedSummary.size() <= 400
+        && data.status == 'official'
+        && data.submittedAt is timestamp
+        && data.submittedAt == request.time;
+    }
+
+    // Nationwide competition leaderboard entries (no PII stored; official scores are immutable)
+    match /competition_entries/{entryId} {
+      allow get: if isSignedIn() && (existing().status == 'official' || existing().uid == request.auth.uid);
+      allow list: if isSignedIn() && existing().status == 'official';
+      allow create: if isVerifiedUser() && isValidId(entryId) && isValidCompetitionEntry(incoming());
+      allow update: if false;
+      allow delete: if isVerifiedUser() && isValidId(entryId) && existing().uid == request.auth.uid;
+    }
+  }
+}
