@@ -204,6 +204,7 @@ async function generateContentWithFallback(
 }
 
 const blackboardCache = new Map<string, Record<string, unknown>>();
+const lessonCache = new Map<string, Record<string, unknown>>();
 
 async function startServer() {
   const app = express();
@@ -406,6 +407,157 @@ async function startServer() {
         console.warn("Blackboard quota/availability notice:", formatErrorMessage(err));
       } else {
         console.error("Error in /api/tutor/blackboard:", err);
+      }
+      res.status(status).json({ error: formatErrorMessage(err) });
+    }
+  });
+
+  // Structured class: simple step-by-step explanation, a worked example per step,
+  // then an end-of-lesson exercise the learner answers.
+  app.post("/api/tutor/lesson", async (req, res) => {
+    try {
+      const {
+        tutorId,
+        profile,
+        topicId,
+        customTopic,
+      }: {
+        tutorId: string;
+        profile: LearnerProfile;
+        topicId?: string | null;
+        customTopic?: string;
+      } = req.body ?? {};
+
+      const safeCustom = cleanLine(customTopic, 200);
+      const cacheKey = [
+        tutorId,
+        profile?.grade ?? "",
+        profile?.languageAid ?? "",
+        profile?.pace ?? "",
+        topicId ?? "",
+        safeCustom,
+      ].join("|");
+      const cached = lessonCache.get(cacheKey);
+      if (cached) {
+        res.json(cached);
+        return;
+      }
+
+      const ai = getAiClient();
+      const tutor = getTutorById(tutorId);
+      const topic = ECZ_TOPICS.find((t) => t.id === topicId) ?? null;
+      const baseInstruction = buildTutorSystemInstruction(tutor, profile, topic);
+      const focusTitle = safeCustom || topic?.title || tutor.subjectFocus;
+
+      const response = await generateContentWithFallback(ai, {
+        contents: [
+          `Teach a short class on "${focusTitle}" to a ${profile.grade} Zambian learner (${profile.pace} pace) following the ECZ syllabus.`,
+          "Explain in very simple, friendly language, like a patient teacher: short sentences, define any hard word the first time it appears.",
+          "Give 4 to 6 steps. Each step builds on the one before. Each step has a short heading, a plain explanation (2 to 4 sentences), and a worked example. At least half of the examples must use everyday Zambian life (kwacha, nshima, maize, minibuses, markets, football, villages and towns).",
+          "Then write 3 to 5 key takeaways, and an exercise of exactly 4 multiple-choice questions that test the steps just taught. Each question has exactly 4 options (plain text, no A-D prefixes), a 0-based correctIndex, and a short kind explanation of why the answer is right.",
+        ].join("\n"),
+        config: {
+          systemInstruction: baseInstruction,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING },
+              objective: { type: Type.STRING },
+              steps: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    heading: { type: Type.STRING },
+                    explanation: { type: Type.STRING },
+                    example: { type: Type.STRING },
+                  },
+                  required: ["heading", "explanation", "example"],
+                },
+              },
+              keyTakeaways: { type: Type.ARRAY, items: { type: Type.STRING } },
+              exercise: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    question: { type: Type.STRING },
+                    options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    correctIndex: { type: Type.INTEGER },
+                    explanation: { type: Type.STRING },
+                  },
+                  required: ["question", "options", "correctIndex", "explanation"],
+                },
+              },
+            },
+            required: ["title", "objective", "steps", "keyTakeaways", "exercise"],
+          },
+        },
+      });
+
+      const raw = JSON.parse((response.text ?? "{}").trim());
+      const str = (v: unknown, max: number) => String(v ?? "").trim().slice(0, max);
+
+      const steps = (Array.isArray(raw.steps) ? raw.steps : [])
+        .map((st: Record<string, unknown>) => ({
+          heading: str(st?.heading, 120),
+          explanation: str(st?.explanation, 1200),
+          example: str(st?.example, 1200),
+        }))
+        .filter((st: { heading: string; explanation: string }) => st.heading && st.explanation)
+        .slice(0, 8);
+
+      const exercise = (Array.isArray(raw.exercise) ? raw.exercise : [])
+        .map((q: Record<string, unknown>) => ({
+          question: str(q?.question, 600),
+          options: (Array.isArray(q?.options) ? q.options : [])
+            .map((o: unknown) => str(o, 300))
+            .filter(Boolean)
+            .slice(0, 4),
+          correctIndex: Number(q?.correctIndex),
+          explanation: str(q?.explanation, 800),
+        }))
+        .filter(
+          (q: { question: string; options: string[]; correctIndex: number }) =>
+            q.question &&
+            q.options.length === 4 &&
+            Number.isInteger(q.correctIndex) &&
+            q.correctIndex >= 0 &&
+            q.correctIndex < 4
+        )
+        .slice(0, 6);
+
+      if (steps.length < 3 || exercise.length < 2) {
+        res.status(502).json({
+          error: "The lesson came back incomplete. Please tap Start lesson again.",
+        });
+        return;
+      }
+
+      const lesson = {
+        title: str(raw.title, 160) || focusTitle,
+        objective: str(raw.objective, 400),
+        steps,
+        keyTakeaways: (Array.isArray(raw.keyTakeaways) ? raw.keyTakeaways : [])
+          .map((k: unknown) => str(k, 300))
+          .filter(Boolean)
+          .slice(0, 6),
+        exercise,
+      };
+
+      if (lessonCache.size >= 100) {
+        const oldestKey = lessonCache.keys().next().value;
+        if (oldestKey) lessonCache.delete(oldestKey);
+      }
+      lessonCache.set(cacheKey, lesson);
+      res.json(lesson);
+    } catch (err) {
+      const status = getHttpStatusForError(err);
+      if (status === 429 || status === 503) {
+        console.warn("Lesson quota/availability notice:", formatErrorMessage(err));
+      } else {
+        console.error("Error in /api/tutor/lesson:", err);
       }
       res.status(status).json({ error: formatErrorMessage(err) });
     }

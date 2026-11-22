@@ -9,6 +9,7 @@ import {
   CheckSquare,
   Compass,
   FileText,
+  GraduationCap,
   HelpCircle,
   Keyboard,
   Loader2,
@@ -39,6 +40,7 @@ import { WrittenAnswerPad } from "./WrittenAnswerPad";
 
 import { MonthlyTestsPanel } from "./MonthlyTestsPanel";
 import { StudyFlashcards } from "./StudyFlashcards";
+import { LessonPanel } from "./LessonPanel";
 import { StudyWeaknessesPanel } from "./StudyWeaknessesPanel";
 
 export type StudyTab =
@@ -46,6 +48,7 @@ export type StudyTab =
   | "pad"
   | "papers"
   | "topics"
+  | "lesson"
   | "quiz"
   | "progress"
   | "monthly"
@@ -153,6 +156,7 @@ export function RightStudyPanel({
     profile.grade === "A-Level" ? "Grade 12" : profile.grade
   );
   const [alevelSubjectFilter, setAlevelSubjectFilter] = useState<string>("All");
+  const [autoStartLesson, setAutoStartLesson] = useState(false);
   const [selectedAnswers, setSelectedAnswers] = useState<
     Record<number, number>
   >({});
@@ -232,6 +236,7 @@ export function RightStudyPanel({
                 icon: Presentation,
               },
               { id: "topics", label: "Topics", icon: Compass },
+              { id: "lesson", label: "Lesson", icon: GraduationCap },
               { id: "quiz", label: "Quiz", icon: CheckSquare },
               { id: "progress", label: "Progress", icon: BarChart3 },
               { id: "monthly", label: "Monthly", icon: CalendarCheck2 },
@@ -576,6 +581,22 @@ export function RightStudyPanel({
           </div>
         )}
 
+        {activeTab === "lesson" && (
+          <LessonPanel
+            tutor={tutor}
+            profile={profile}
+            activeTopic={activeTopic}
+            customTopic={customTopic}
+            autoStart={autoStartLesson}
+            onAutoStartHandled={() => setAutoStartLesson(false)}
+            onChooseAnotherTopic={() => onTabChange("topics")}
+            onAskTutorText={onAskTutorText}
+            onRecordQuizAnswer={onRecordQuizAnswer}
+            onSpeakText={onSpeakText}
+            speakingId={speakingId}
+          />
+        )}
+
         {activeTab === "topics" && (
           <div className="space-y-5">
             <div>
@@ -665,12 +686,15 @@ export function RightStudyPanel({
               {filteredTopics.map((topic) => {
                 const isSelected = activeTopic?.id === topic.id;
                 return (
-                  <button
+                  <div
                     key={topic.id}
+                    className={isSelected ? "bg-emerald-50/70" : ""}
+                  >
+                  <button
                     type="button"
                     onClick={() => onSelectTopic(topic)}
                     className={`w-full text-left py-3.5 px-3 transition-colors ${
-                      isSelected ? "bg-emerald-50/70" : "hover:bg-slate-50"
+                      isSelected ? "" : "hover:bg-slate-50"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -692,6 +716,21 @@ export function RightStudyPanel({
                       {topic.summary}
                     </p>
                   </button>
+                  <div className="px-3 pb-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSelectTopic(topic);
+                        setAutoStartLesson(true);
+                        onTabChange("lesson");
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold min-h-[40px] cursor-pointer"
+                    >
+                      <GraduationCap className="w-3.5 h-3.5" />
+                      Start lesson
+                    </button>
+                  </div>
+                  </div>
                 );
               })}
             </div>
