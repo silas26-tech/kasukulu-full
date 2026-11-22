@@ -1,6 +1,9 @@
 import type { User } from "firebase/auth";
 
 export const PRIMARY_ADMIN_EMAIL = "razeensilas@gmail.com";
+// NOTE: Admin status here only decides which screens to SHOW. Real protection is in
+// firestore.rules, which checks the verified Google email on the server. There is
+// deliberately no passcode: anything starting with VITE_ is readable by every visitor.
 const ADMIN_SESSION_KEY = "kasukulu_admin_session_v1";
 
 export function getAdminEmails(): string[] {
@@ -37,10 +40,4 @@ export function setAdminSession(active: boolean): void {
   } catch {
     // Ignore sessionStorage errors
   }
-}
-
-export function verifyAdminKey(key: string): boolean {
-  const trimmed = key.trim();
-  const configuredKey = import.meta.env.VITE_ADMIN_PASSCODE || "kasukulu-admin-2026";
-  return trimmed === configuredKey || trimmed === "kasukulu-admin";
 }

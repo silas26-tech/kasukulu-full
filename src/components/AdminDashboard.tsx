@@ -8,7 +8,6 @@ import {
   Database,
   GraduationCap,
   Home,
-  KeyRound,
   Layers,
   Lock,
   LogIn,
@@ -34,7 +33,7 @@ import {
   signOutLearner,
   subscribeToAuth,
 } from "../firebase";
-import { isUserAdmin, verifyAdminKey, setAdminSession, PRIMARY_ADMIN_EMAIL } from "../utils/adminAuth";
+import { isUserAdmin, setAdminSession, PRIMARY_ADMIN_EMAIL } from "../utils/adminAuth";
 import type { CompetitionLeaderboardEntry } from "../data/competitions";
 import { TutorPortrait } from "./TutorPortrait";
 
@@ -67,9 +66,6 @@ export function AdminDashboard({
   const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const [passcode, setPasscode] = useState("");
-  const [passcodeError, setPasscodeError] = useState<string | null>(null);
-  const [showPasscodeField, setShowPasscodeField] = useState(false);
   const [deniedEmail, setDeniedEmail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -129,21 +125,6 @@ export function AdminDashboard({
       );
     } finally {
       setAuthBusy(false);
-    }
-  };
-
-  const handleVerifyPasscode = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!passcode.trim()) {
-      setPasscodeError("Please enter an administrator key.");
-      return;
-    }
-    if (verifyAdminKey(passcode)) {
-      setPasscodeError(null);
-      setAdminSession(true);
-      onAdminAuthSuccess();
-    } else {
-      setPasscodeError("Invalid administrator key. Access denied.");
     }
   };
 
@@ -225,48 +206,6 @@ export function AdminDashboard({
               <LogIn className="w-4 h-4" />
               <span>{authBusy ? "Authenticating..." : "Sign In with Administrator Google Account"}</span>
             </button>
-
-            {!showPasscodeField ? (
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={() => setShowPasscodeField(true)}
-                  className="text-xs text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                >
-                  Or authenticate with an Administrator Key / PIN
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleVerifyPasscode} className="space-y-3 pt-2 border-t border-slate-100">
-                <label className="block text-xs font-medium text-slate-700">
-                  <span className="flex items-center gap-1.5">
-                    <KeyRound className="w-3.5 h-3.5 text-slate-500" />
-                    Administrator Access Key
-                  </span>
-                  <div className="mt-1.5 flex gap-2">
-                    <input
-                      type="password"
-                      value={passcode}
-                      onChange={(e) => {
-                        setPasscode(e.target.value);
-                        if (passcodeError) setPasscodeError(null);
-                      }}
-                      placeholder="Enter administrator key..."
-                      className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
-                    />
-                    <button
-                      type="submit"
-                      className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors cursor-pointer"
-                    >
-                      Verify
-                    </button>
-                  </div>
-                </label>
-                {passcodeError && (
-                  <p className="text-xs text-red-700 font-medium">{passcodeError}</p>
-                )}
-              </form>
-            )}
           </div>
 
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
