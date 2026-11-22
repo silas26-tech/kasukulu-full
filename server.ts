@@ -203,12 +203,105 @@ async function generateContentWithFallback(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Abuse protection for the paid AI endpoints (no sign-in needed, so learners
+// are never blocked from the tutor). Tunable with environment variables:
+//   AI_RATE_LIMIT      requests per IP per 10 minutes (default 120; schools share one IP)
+//   AI_DAILY_BUDGET    total AI requests per day for the whole app (default 20000)
+//   LIVE_MAX_PER_IP    simultaneous live voice sessions per IP (default 5)
+//   TRUST_PROXY_HOPS   proxies in front of the server (default 1; use 0 if none)
+// ---------------------------------------------------------------------------
+const RATE_WINDOW_MS = 10 * 60 * 1000;
+const AI_RATE_LIMIT = Number(process.env.AI_RATE_LIMIT) || 120;
+const AI_DAILY_BUDGET = Number(process.env.AI_DAILY_BUDGET) || 20000;
+const LIVE_MAX_PER_IP = Number(process.env.LIVE_MAX_PER_IP) || 5;
+const LIVE_START_COST = 10; // a live voice session costs far more than one request
+const TRUST_PROXY_HOPS =
+  process.env.TRUST_PROXY_HOPS !== undefined
+    ? Number(process.env.TRUST_PROXY_HOPS)
+    : 1;
+
+const ipHits = new Map<string, { count: number; resetAt: number }>();
+const liveSessionsByIp = new Map<string, number>();
+let budgetDay = "";
+let budgetUsed = 0;
+
+function clientIp(req: http.IncomingMessage): string {
+  const forwarded = String(req.headers["x-forwarded-for"] ?? "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (TRUST_PROXY_HOPS > 0 && forwarded.length >= TRUST_PROXY_HOPS) {
+    return forwarded[forwarded.length - TRUST_PROXY_HOPS];
+  }
+  return req.socket.remoteAddress ?? "unknown";
+}
+
+/** Returns null if allowed, otherwise a friendly reason and retry delay. */
+function checkAiAllowance(
+  ip: string,
+  cost = 1
+): { message: string; retryAfterSec: number } | null {
+  const now = Date.now();
+
+  const today = new Date(now).toISOString().slice(0, 10);
+  if (today !== budgetDay) {
+    budgetDay = today;
+    budgetUsed = 0;
+  }
+  if (budgetUsed + cost > AI_DAILY_BUDGET) {
+    return {
+      message:
+        "Kasukulu's tutors are very busy today. Please try again tomorrow.",
+      retryAfterSec: 3600,
+    };
+  }
+
+  const entry = ipHits.get(ip);
+  if (!entry || entry.resetAt <= now) {
+    ipHits.set(ip, { count: cost, resetAt: now + RATE_WINDOW_MS });
+  } else {
+    if (entry.count + cost > AI_RATE_LIMIT) {
+      return {
+        message:
+          "You're going very fast! Please wait a few minutes and try again.",
+        retryAfterSec: Math.max(1, Math.ceil((entry.resetAt - now) / 1000)),
+      };
+    }
+    entry.count += cost;
+  }
+  budgetUsed += cost;
+  return null;
+}
+
+// Forget old IPs so the map cannot grow forever.
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of ipHits) {
+    if (entry.resetAt <= now) ipHits.delete(ip);
+  }
+}, RATE_WINDOW_MS).unref();
+
 const blackboardCache = new Map<string, Record<string, unknown>>();
 const lessonCache = new Map<string, Record<string, unknown>>();
 
 async function startServer() {
   const app = express();
   app.use(express.json({ limit: "15mb" }));
+
+  // Every route that calls Gemini goes through the limiter.
+  app.use(
+    ["/api/tutor", "/api/competitions/mark"],
+    (req: express.Request, res: express.Response, next: express.NextFunction) => {
+      const blocked = checkAiAllowance(clientIp(req));
+      if (blocked) {
+        res.set("Retry-After", String(blocked.retryAfterSec));
+        res.status(429).json({ error: blocked.message });
+        return;
+      }
+      next();
+    }
+  );
 
   // Health check
   app.get("/api/health", (_req, res) => {
@@ -1041,7 +1134,24 @@ async function startServer() {
         `http://${req.headers.host || "localhost"}`
       );
       if (parsedUrl.pathname === "/live") {
+        const ip = clientIp(req);
+        const openNow = liveSessionsByIp.get(ip) ?? 0;
+        const blocked =
+          openNow >= LIVE_MAX_PER_IP
+            ? { message: "Too many live sessions open on this connection." }
+            : checkAiAllowance(ip, LIVE_START_COST);
+        if (blocked) {
+          socket.write("HTTP/1.1 429 Too Many Requests\r\nConnection: close\r\n\r\n");
+          socket.destroy();
+          return;
+        }
+        liveSessionsByIp.set(ip, openNow + 1);
         wss.handleUpgrade(req, socket, head, (clientWs) => {
+          clientWs.on("close", () => {
+            const left = (liveSessionsByIp.get(ip) ?? 1) - 1;
+            if (left > 0) liveSessionsByIp.set(ip, left);
+            else liveSessionsByIp.delete(ip);
+          });
           wss.emit("connection", clientWs, req);
         });
       }
