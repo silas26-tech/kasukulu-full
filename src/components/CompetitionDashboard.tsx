@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import {
   COMPETITION_PRIZES,
-  NATIONWIDE_COMPETITIONS,
   type CompetitionLeaderboardEntry,
   type CompetitionMarkResponse,
   type NationwideCompetition,
@@ -78,12 +77,12 @@ export function CompetitionDashboard({
   const [learnerName, setLearnerName] = useState(profile.name || "");
   const [schoolName, setSchoolName] = useState(profile.school || "");
   const [province, setProvince] = useState(profile.province || "Lusaka");
-  const [selectedCompId, setSelectedCompId] = useState<string>(() => {
-    const match = NATIONWIDE_COMPETITIONS.find(
-      (c) => c.grade === profile.grade
-    );
-    return match ? match.id : NATIONWIDE_COMPETITIONS[0].id;
-  });
+  // Papers come from the server without answers or marking schemes.
+  const [competitions, setCompetitions] = useState<NationwideCompetition[]>([]);
+  const [compsLoading, setCompsLoading] = useState(true);
+  const [compsError, setCompsError] = useState<string | null>(null);
+  const [compsReloadKey, setCompsReloadKey] = useState(0);
+  const [selectedCompId, setSelectedCompId] = useState<string>("");
   const [regError, setRegError] = useState<string | null>(null);
 
   const [examStage, setExamStage] = useState<ExamStage>("register");
@@ -107,9 +106,42 @@ export function CompetitionDashboard({
   const [searchQuery, setSearchQuery] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const activeCompetition: NationwideCompetition =
-    NATIONWIDE_COMPETITIONS.find((c) => c.id === selectedCompId) ??
-    NATIONWIDE_COMPETITIONS[0];
+  const activeCompetition: NationwideCompetition | undefined =
+    competitions.find((c) => c.id === selectedCompId) ?? competitions[0];
+
+  // Load the public competition papers
+  useEffect(() => {
+    let cancelled = false;
+    setCompsLoading(true);
+    setCompsError(null);
+    fetch("/api/competitions")
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        return (await res.json()) as { competitions?: NationwideCompetition[] };
+      })
+      .then((data) => {
+        if (cancelled) return;
+        const list = Array.isArray(data.competitions) ? data.competitions : [];
+        setCompetitions(list);
+        setSelectedCompId((prev) => {
+          if (prev && list.some((c) => c.id === prev)) return prev;
+          return (list.find((c) => c.grade === profile.grade) ?? list[0])?.id ?? "";
+        });
+      })
+      .catch(() => {
+        if (!cancelled)
+          setCompsError(
+            "Could not load the competition papers. Check your connection and try again."
+          );
+      })
+      .finally(() => {
+        if (!cancelled) setCompsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compsReloadKey]);
 
   // Auth listener
   useEffect(() => {
@@ -172,6 +204,7 @@ export function CompetitionDashboard({
   };
 
   const handleStartTest = () => {
+    if (!activeCompetition) return;
     const cleanName = learnerName.trim();
     const cleanSchool = schoolName.trim();
     if (cleanName.length < 2) {
@@ -247,7 +280,7 @@ export function CompetitionDashboard({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          competitionId: activeCompetition.id,
+          competitionId: activeCompetition?.id,
           learnerName: learnerName.trim(),
           schoolName: schoolName.trim(),
           answers,
@@ -360,12 +393,49 @@ export function CompetitionDashboard({
       });
   }, [leaderboardEntries]);
 
-  const answeredCount = activeCompetition.questions.filter((q) => {
+  const answeredCount = (activeCompetition?.questions ?? []).filter((q) => {
     const a = answers[q.id];
     if (!a) return false;
     if (q.type === "mcq") return typeof a.selectedIndex === "number";
     return Boolean(a.writtenAnswer?.trim());
   }).length;
+
+  if (!activeCompetition) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center space-y-3">
+        {compsLoading ? (
+          <>
+            <Loader2 className="w-6 h-6 text-emerald-700 mx-auto animate-spin" />
+            <div className="text-sm font-semibold text-slate-900">
+              Loading competition papers…
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="text-sm font-semibold text-slate-900">
+              {compsError ?? "No competition papers are available right now."}
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCompsReloadKey((k) => k + 1)}
+                className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold cursor-pointer min-h-[44px]"
+              >
+                Try again
+              </button>
+              <button
+                type="button"
+                onClick={onBackHome}
+                className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 cursor-pointer min-h-[44px]"
+              >
+                Back home
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -654,7 +724,7 @@ export function CompetitionDashboard({
                     Choose Nationwide Competition Paper
                   </div>
                   <div className="space-y-2.5">
-                    {NATIONWIDE_COMPETITIONS.map((comp) => {
+                    {competitions.map((comp) => {
                       const active = comp.id === activeCompetition.id;
                       return (
                         <button
