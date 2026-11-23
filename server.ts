@@ -451,6 +451,60 @@ async function getAdmin(): Promise<AdminHandles | null> {
   return adminHandles;
 }
 
+// ---------------------------------------------------------------------------
+// Cost savers: repeat requests are answered from a cache and are not charged to
+// the learner's daily allowance.
+//   LESSON_CACHE_DIR   where finished lessons are saved on disk (default .cache/lessons)
+//   LIVE_MAX_MINUTES   longest a live voice call may last (default 6)
+// ---------------------------------------------------------------------------
+const LESSON_CACHE_DIR = path.resolve(
+  process.env.LESSON_CACHE_DIR || ".cache/lessons"
+);
+const LIVE_MAX_MS = (Number(process.env.LIVE_MAX_MINUTES) || 6) * 60 * 1000;
+
+function lessonDiskPath(key: string): string {
+  const name = crypto.createHash("sha1").update(key).digest("hex");
+  return path.join(LESSON_CACHE_DIR, `${name}.json`);
+}
+
+function readLessonFromDisk(key: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(lessonDiskPath(key), "utf8"));
+    return parsed && typeof parsed === "object" && Array.isArray(parsed.sections)
+      ? parsed
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLessonToDisk(key: string, lesson: Record<string, unknown>): void {
+  try {
+    fs.mkdirSync(LESSON_CACHE_DIR, { recursive: true });
+    fs.writeFileSync(lessonDiskPath(key), JSON.stringify(lesson));
+  } catch (err) {
+    console.warn("Could not save lesson to disk cache:", err);
+  }
+}
+
+/** Gives back the allowance that the limiter charged for this request. */
+function refundAllowance(req: express.Request): void {
+  const charge = (req as unknown as { aiCharge?: { ip: string; deviceId: string | null; cost: number } }).aiCharge;
+  if (!charge) return;
+  (req as unknown as { aiCharge?: unknown }).aiCharge = undefined;
+  const entry = ipHits.get(charge.ip);
+  if (entry) entry.count = Math.max(0, entry.count - charge.cost);
+  budgetUsed = Math.max(0, budgetUsed - charge.cost);
+  if (charge.deviceId) {
+    const used = userUsage.get(charge.deviceId);
+    if (used !== undefined) userUsage.set(charge.deviceId, Math.max(0, used - charge.cost));
+  }
+}
+
+// Recent voice readbacks, so the same sentence is not synthesised twice.
+const speechCache = new Map<string, { audioBase64: string; mimeType: string }>();
+const SPEECH_CACHE_MAX = 40;
+
 const blackboardCache = new Map<string, Record<string, unknown>>();
 const lessonCache = new Map<string, Record<string, unknown>>();
 
@@ -462,7 +516,12 @@ async function startServer() {
   app.use(
     ["/api/tutor", "/api/competitions/mark"],
     (req: express.Request, res: express.Response, next: express.NextFunction) => {
-      const blocked = checkAiAllowance(clientIp(req), 1, deviceIdFrom(req));
+      const ip = clientIp(req);
+      const deviceId = deviceIdFrom(req);
+      const blocked = checkAiAllowance(ip, 1, deviceId);
+      if (!blocked) {
+        (req as unknown as { aiCharge: unknown }).aiCharge = { ip, deviceId, cost: 1 };
+      }
       if (blocked) {
         res.set("Retry-After", String(blocked.retryAfterSec));
         res.status(429).json({ error: blocked.message });
@@ -620,6 +679,7 @@ async function startServer() {
 
       const cached = blackboardCache.get(cacheKey);
       if (cached) {
+        refundAllowance(req);
         res.json(cached);
         return;
       }
@@ -691,17 +751,20 @@ async function startServer() {
       } = req.body ?? {};
 
       const safeCustom = cleanLine(customTopic, 200);
+      // The tutor is decided by the topic, so ready-made topics share one lesson per grade.
       const cacheKey = [
         "v4",
-        tutorId,
+        topicId ? "" : tutorId,
         profile?.grade ?? "",
         profile?.languageAid ?? "",
         profile?.pace ?? "",
         topicId ?? "",
         safeCustom,
       ].join("|");
-      const cached = lessonCache.get(cacheKey);
+      const cached = lessonCache.get(cacheKey) ?? readLessonFromDisk(cacheKey);
       if (cached) {
+        lessonCache.set(cacheKey, cached);
+        refundAllowance(req);
         res.json(cached);
         return;
       }
@@ -857,11 +920,12 @@ async function startServer() {
         written,
       };
 
-      if (lessonCache.size >= 100) {
+      if (lessonCache.size >= 300) {
         const oldestKey = lessonCache.keys().next().value;
         if (oldestKey) lessonCache.delete(oldestKey);
       }
       lessonCache.set(cacheKey, lesson);
+      writeLessonToDisk(cacheKey, lesson);
       res.json(lesson);
     } catch (err) {
       const status = getHttpStatusForError(err);
@@ -1075,12 +1139,22 @@ async function startServer() {
         return;
       }
 
-      const ai = getAiClient();
       const tutor = getTutorById(tutorId);
       const cleanSpeechText = text
         .replace(/[*_`#]/g, "")
         .replace(/\s+/g, " ")
         .trim();
+      const speechKey = crypto
+        .createHash("sha1")
+        .update(`${tutor.voiceName}|${cleanSpeechText}`)
+        .digest("hex");
+      const cachedSpeech = speechCache.get(speechKey);
+      if (cachedSpeech) {
+        refundAllowance(req);
+        res.json(cachedSpeech);
+        return;
+      }
+      const ai = getAiClient();
 
       const ukZambianStyle = `${tutor.voiceStyle}. Speak in a natural, deeply personal educated UK-Zambian English accent—refined British-Commonwealth vowel diction blended gently with warm Lusaka Southern African melody, natural conversational breathing, soft warmth, and unhurried one-on-one mentor pacing.`;
 
@@ -1133,7 +1207,13 @@ async function startServer() {
         return;
       }
 
-      res.json({ audioBase64: base64Audio, mimeType: "audio/wav" });
+      const speechResult = { audioBase64: base64Audio, mimeType: "audio/wav" };
+      if (speechCache.size >= SPEECH_CACHE_MAX) {
+        const oldest = speechCache.keys().next().value;
+        if (oldest) speechCache.delete(oldest);
+      }
+      speechCache.set(speechKey, speechResult);
+      res.json(speechResult);
     } catch (err) {
       const status = getHttpStatusForError(err);
       if (status === 429 || status === 503) {
@@ -1618,6 +1698,27 @@ async function startServer() {
     let liveSession: Awaited<ReturnType<GoogleGenAI["live"]["connect"]>> | null =
       null;
     let isClosing = false;
+
+    // Live voice is the most expensive feature, so each call has a time limit.
+    const liveTimer = setTimeout(() => {
+      if (clientWs.readyState === WebSocket.OPEN) {
+        clientWs.send(
+          JSON.stringify({
+            type: "error",
+            message:
+              "Your live call time is up for now. You can start another call, or keep learning with Push-to-Talk & Type.",
+          })
+        );
+      }
+      setTimeout(() => {
+        try {
+          clientWs.close();
+        } catch {
+          // ignore
+        }
+      }, 500);
+    }, LIVE_MAX_MS);
+    clientWs.on("close", () => clearTimeout(liveTimer));
 
     const sendToClient = (payload: Record<string, unknown>) => {
       if (clientWs.readyState === WebSocket.OPEN) {
