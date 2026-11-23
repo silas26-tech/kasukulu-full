@@ -47,6 +47,7 @@ import { TutorPortrait } from "./components/TutorPortrait";
 import { VoiceWaveform } from "./components/VoiceWaveform";
 import { ProfileModal } from "./components/ProfileModal";
 import { WelcomeOnboarding } from "./components/WelcomeOnboarding";
+import { LegalModal, type LegalTab } from "./components/LegalModal";
 import { HomeHub, type HomeDestination } from "./components/HomeHub";
 import { PastPapersPanel } from "./components/PastPapersPanel";
 import { SubjectsPanel } from "./components/SubjectsPanel";
@@ -214,6 +215,7 @@ export default function App() {
   >(() => (loadProfile().grade === "A-Level" ? "alevel" : "home"));
 
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  const [legalTab, setLegalTab] = useState<LegalTab | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(() => checkAdminSession());
 
   useEffect(() => {
@@ -2756,9 +2758,20 @@ export default function App() {
         <footer className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
           <div>
             Kasukulu — Personalized AI Voice Tutors for Zambian Learners (Grades 7, 9, 12 &amp; A-Level)
+            <div className="mt-1 text-[11px] text-slate-400">
+              Independent app. Not affiliated with, endorsed by or associated with the Examinations Council of Zambia (ECZ).
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <span>Free Zambian Curriculum Access</span>
+            <span aria-hidden="true">·</span>
+            <button
+              type="button"
+              onClick={() => setLegalTab("privacy")}
+              className="text-slate-500 hover:text-slate-800 underline cursor-pointer"
+            >
+              Privacy &amp; Terms
+            </button>
             <span aria-hidden="true">·</span>
             <button
               type="button"
@@ -2780,6 +2793,12 @@ export default function App() {
         sending={isSendingSnap}
       />
 
+      <LegalModal
+        open={legalTab !== null}
+        initialTab={legalTab ?? "privacy"}
+        onClose={() => setLegalTab(null)}
+      />
+
       <ProfileModal
         open={profileOpen}
         profile={profile}
@@ -2795,6 +2814,10 @@ export default function App() {
           }
         }}
         onClose={() => setProfileOpen(false)}
+        onDataDeleted={() => {
+          // Everything was erased; restart so the app shows the welcome screen.
+          window.location.reload();
+        }}
         onSwitchLearner={() => {
           stopLiveCall();
           stopTtsPlayback();

@@ -1,4 +1,7 @@
+import { useState } from "react";
 import { X } from "lucide-react";
+import { LegalModal, type LegalTab } from "./LegalModal";
+import { deleteMyData } from "../utils/deleteMyData";
 import {
   type GradeLevel,
   type LanguageAid,
@@ -16,6 +19,8 @@ interface ProfileModalProps {
   onSwitchLearner?: () => void;
   isAdmin?: boolean;
   onOpenAdmin?: () => void;
+  /** Called after the learner's data has been deleted (app should reset). */
+  onDataDeleted?: () => void;
 }
 
 const GRADES: GradeLevel[] = [
@@ -62,8 +67,30 @@ export function ProfileModal({
   onSwitchLearner,
   isAdmin = false,
   onOpenAdmin,
+  onDataDeleted,
 }: ProfileModalProps) {
+  const [legalTab, setLegalTab] = useState<LegalTab | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteMsg, setDeleteMsg] = useState<string | null>(null);
+
   if (!open) return null;
+
+  const runDelete = async () => {
+    setDeleting(true);
+    setDeleteMsg(null);
+    const result = await deleteMyData();
+    setDeleting(false);
+    setConfirmDelete(false);
+    if (result.onlineFailed) {
+      setDeleteMsg(
+        "Your data on this device was deleted, but we could not remove your competition entries right now. Email us and we will remove them."
+      );
+      return;
+    }
+    onDataDeleted?.();
+  };
+
 
   return (
     <div
@@ -262,7 +289,75 @@ export function ProfileModal({
             Save Preferences
           </button>
         </div>
+
+        <div className="pt-3 border-t border-slate-100 space-y-3">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+            <button
+              type="button"
+              onClick={() => setLegalTab("privacy")}
+              className="text-slate-600 hover:text-slate-900 underline cursor-pointer"
+            >
+              Privacy Policy
+            </button>
+            <button
+              type="button"
+              onClick={() => setLegalTab("terms")}
+              className="text-slate-600 hover:text-slate-900 underline cursor-pointer"
+            >
+              Terms of Use
+            </button>
+            {!confirmDelete && (
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                className="text-red-700 hover:text-red-900 underline cursor-pointer"
+              >
+                Delete my data
+              </button>
+            )}
+          </div>
+          <p className="text-[11px] text-slate-500 leading-relaxed">
+            Kasukulu is not affiliated with, endorsed by or associated with the
+            Examinations Council of Zambia (ECZ).
+          </p>
+          {confirmDelete && (
+            <div role="alertdialog" className="rounded-xl border border-red-200 bg-red-50 p-3 space-y-2">
+              <p className="text-xs text-red-900 leading-relaxed">
+                This erases your profile, progress, notes and flashcards on this
+                device and removes your competition entries. It cannot be undone.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={runDelete}
+                  className="px-4 py-2 rounded-lg bg-red-700 text-white text-xs font-semibold hover:bg-red-800 disabled:opacity-60 cursor-pointer min-h-[40px]"
+                >
+                  {deleting ? "Deleting…" : "Yes, delete everything"}
+                </button>
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={() => setConfirmDelete(false)}
+                  className="px-4 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 text-xs font-medium cursor-pointer min-h-[40px]"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+          {deleteMsg && (
+            <p role="status" className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              {deleteMsg}
+            </p>
+          )}
+        </div>
       </div>
+      <LegalModal
+        open={legalTab !== null}
+        initialTab={legalTab ?? "privacy"}
+        onClose={() => setLegalTab(null)}
+      />
     </div>
   );
 }

@@ -13,6 +13,8 @@ import {
 } from "../data/curriculum";
 import { TutorPortrait } from "./TutorPortrait";
 import { PWAInstallButton } from "./PWAInstallButton";
+import { LegalModal, type LegalTab } from "./LegalModal";
+import { ECZ_DISCLAIMER_SHORT } from "../data/legal";
 import heroStudyImg from "../assets/images/hero_kasukulu_study_1794757601720.jpg";
 import appLogoImg from "../assets/images/app_logo_kasukulu_1794875593858.jpg";
 
@@ -78,6 +80,9 @@ export function WelcomeOnboarding({
   );
   const [nameError, setNameError] = useState<string | null>(null);
   const [heroImgFailed, setHeroImgFailed] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const [agreeError, setAgreeError] = useState(false);
+  const [legalTab, setLegalTab] = useState<LegalTab | null>(null);
 
   const visibleSignupTutors =
     grade === "A-Level" ? A_LEVEL_TUTORS : ECZ_SCHOOL_TUTORS;
@@ -87,6 +92,10 @@ export function WelcomeOnboarding({
     const cleanName = name.trim();
     if (!cleanName) {
       setNameError("Please enter your first name so your tutor knows who to greet.");
+      return;
+    }
+    if (!agreed) {
+      setAgreeError(true);
       return;
     }
     setNameError(null);
@@ -510,6 +519,47 @@ export function WelcomeOnboarding({
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={agreed}
+                    onChange={(e) => {
+                      setAgreed(e.target.checked);
+                      if (e.target.checked) setAgreeError(false);
+                    }}
+                    className="mt-1 w-5 h-5 accent-emerald-700 shrink-0"
+                  />
+                  <span className="text-xs text-slate-700 leading-relaxed">
+                    I agree to the{" "}
+                    <button
+                      type="button"
+                      onClick={() => setLegalTab("terms")}
+                      className="underline font-semibold text-emerald-800 cursor-pointer"
+                    >
+                      Terms
+                    </button>{" "}
+                    and{" "}
+                    <button
+                      type="button"
+                      onClick={() => setLegalTab("privacy")}
+                      className="underline font-semibold text-emerald-800 cursor-pointer"
+                    >
+                      Privacy Policy
+                    </button>
+                    . If I am under 18, my parent or guardian knows I am using Kasukulu.
+                  </span>
+                </label>
+                {agreeError && (
+                  <p role="alert" className="text-xs text-red-700">
+                    Please tick the box to continue.
+                  </p>
+                )}
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  {ECZ_DISCLAIMER_SHORT}
+                </p>
+              </div>
+
               <div className="pt-2 flex items-center justify-end">
                 <button
                   type="submit"
@@ -523,6 +573,11 @@ export function WelcomeOnboarding({
           </motion.div>
         )}
       </main>
+      <LegalModal
+        open={legalTab !== null}
+        initialTab={legalTab ?? "privacy"}
+        onClose={() => setLegalTab(null)}
+      />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
   deleteDoc,
   doc,
   getDocFromServer,
+  getDocs,
   getFirestore,
   limit,
   onSnapshot,
@@ -275,6 +276,25 @@ export async function deleteCompetitionEntry(entryId: string): Promise<void> {
     await deleteDoc(doc(db, path, entryId));
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, `${path}/${entryId}`);
+  }
+}
+
+/** Deletes every leaderboard entry belonging to the signed-in learner. */
+export async function deleteMyCompetitionEntries(uid: string): Promise<number> {
+  const path = "competition_entries";
+  try {
+    const snap = await getDocs(
+      query(
+        collection(db, path),
+        where("status", "==", "official"),
+        where("uid", "==", uid),
+        limit(200)
+      )
+    );
+    await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+    return snap.size;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
   }
 }
 
