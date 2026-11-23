@@ -65,6 +65,9 @@ export interface CompetitionMarkResponse {
   gradeBand: string;
   summaryFeedback: string;
   questionResults: QuestionMarkResult[];
+  /** Signed proof of this result, issued by the server. Needed to record a verified score. */
+  receipt?: string;
+  receiptSignature?: string;
 }
 
 export interface CompetitionLeaderboardEntry {

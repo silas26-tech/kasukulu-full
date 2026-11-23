@@ -31,6 +31,7 @@ import {
 import {
   deleteCompetitionEntry,
   listenToCompetitionLeaderboard,
+  recordVerifiedEntry,
   saveCompetitionEntry,
   signInWithGoogle,
   signOutLearner,
@@ -242,6 +243,26 @@ export function CompetitionDashboard({
     setPublishingScore(true);
     setPublishError(null);
     try {
+      // Preferred path: the server verifies the score and writes it itself.
+      if (report.receipt && report.receiptSignature) {
+        const verified = await recordVerifiedEntry({
+          receipt: report.receipt,
+          receiptSignature: report.receiptSignature,
+          learnerName: learnerName.trim(),
+          schoolName: schoolName.trim(),
+          province,
+          timeTakenSeconds: Math.max(1, durationSeconds),
+        });
+        if (verified.ok) {
+          setPublishedEntryId(verified.entryId);
+          return;
+        }
+        // Only fall back to the older browser save if the server has not been set up yet.
+        if (!verified.notConfigured) {
+          throw new Error(verified.error);
+        }
+      }
+
       const entryId = await saveCompetitionEntry({
         learnerName: learnerName.trim(),
         schoolName: schoolName.trim(),

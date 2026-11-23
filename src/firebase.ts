@@ -216,6 +216,59 @@ export async function saveCompetitionEntry(
   }
 }
 
+export type VerifiedRecordResult =
+  | { ok: true; entryId: string }
+  | { ok: false; notConfigured: boolean; error: string };
+
+/**
+ * Asks the server to record a verified score. The server checks the Google sign-in and the
+ * signed receipt from marking, then writes the entry itself, so the browser cannot make up a score.
+ * If the server is not set up for this yet, notConfigured is true and the caller can fall back.
+ */
+export async function recordVerifiedEntry(input: {
+  receipt: string;
+  receiptSignature: string;
+  learnerName: string;
+  schoolName: string;
+  province: string;
+  timeTakenSeconds: number;
+}): Promise<VerifiedRecordResult> {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    return {
+      ok: false,
+      notConfigured: false,
+      error: "Please sign in with Google before recording your score.",
+    };
+  }
+  try {
+    const idToken = await currentUser.getIdToken();
+    const res = await fetch("/api/competitions/record", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify(input),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && typeof data.entryId === "string") {
+      return { ok: true, entryId: data.entryId };
+    }
+    return {
+      ok: false,
+      notConfigured: res.status === 503 && data?.code === "not_configured",
+      error: data?.error || "Could not save your score. Please try again.",
+    };
+  } catch {
+    return {
+      ok: false,
+      notConfigured: false,
+      error: "Could not reach Kasukulu. Check your connection and try again.",
+    };
+  }
+}
+
 export async function deleteCompetitionEntry(entryId: string): Promise<void> {
   const path = "competition_entries";
   try {
