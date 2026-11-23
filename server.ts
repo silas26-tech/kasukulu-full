@@ -141,6 +141,24 @@ function formatErrorMessage(err: unknown): string {
   return "An unexpected error occurred while contacting the AI tutor.";
 }
 
+/** Parses JSON from a model reply, tolerating code fences and stray text around it. */
+function parseModelJson(text: string | undefined): any {
+  const cleaned = String(text ?? "")
+    .replace(/^\s*```(?:json)?\s*/i, "")
+    .replace(/\s*```\s*$/i, "")
+    .trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      return JSON.parse(cleaned.slice(start, end + 1));
+    }
+    throw new Error("The AI reply was cut off.");
+  }
+}
+
 async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 3): Promise<T> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -775,7 +793,7 @@ async function startServer() {
       const baseInstruction = buildTutorSystemInstruction(tutor, profile, topic);
       const focusTitle = safeCustom || topic?.title || tutor.subjectFocus;
 
-      const response = await generateContentWithFallback(ai, {
+      const lessonPayload: GenerateContentPayload = {
         contents: [
           `Write a complete lesson on "${focusTitle}" for a ${profile.grade} Zambian learner (${profile.pace} pace) following the ECZ syllabus. It should take a learner about 15 to 20 minutes to read and work through, and by the end they should truly understand the topic without any other help.`,
           "TEACHING STYLE: very simple, friendly, clear language like a patient teacher. Short sentences. Define every hard word the first time it appears. Build from what the learner already knows, then go deeper, one idea at a time.",
@@ -844,9 +862,41 @@ async function startServer() {
             ],
           },
         },
-      });
+      };
 
-      const raw = JSON.parse((response.text ?? "{}").trim());
+      // Long lessons are sometimes cut off or wrapped in extra text. Try up to
+      // three times before telling the learner, and never cache a bad result.
+      let raw: any = null;
+      let lastParseError: unknown = null;
+      for (let attempt = 1; attempt <= 3 && raw === null; attempt++) {
+        const response = await generateContentWithFallback(ai, lessonPayload);
+        try {
+          const parsed = parseModelJson(response.text);
+          if (
+            parsed &&
+            Array.isArray(parsed.sections) &&
+            parsed.sections.length > 0 &&
+            Array.isArray(parsed.mcq) &&
+            Array.isArray(parsed.written)
+          ) {
+            raw = parsed;
+          } else {
+            lastParseError = new Error("The AI lesson was incomplete.");
+          }
+        } catch (parseErr) {
+          lastParseError = parseErr;
+          console.warn(`Lesson reply unreadable (attempt ${attempt}):`, parseErr);
+        }
+      }
+      if (raw === null) {
+        console.error("Lesson could not be built after retries:", lastParseError);
+        refundAllowance(req);
+        res.status(503).json({
+          error:
+            "The lesson took too long to prepare. Please tap Try again in a moment.",
+        });
+        return;
+      }
       const str = (v: unknown, max: number) => String(v ?? "").trim().slice(0, max);
 
       const sections = (Array.isArray(raw.sections) ? raw.sections : [])
