@@ -1,15 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertCircle,
-  ArrowLeft,
   ArrowRight,
+  BookOpen,
   CheckCircle2,
+  Clock,
   GraduationCap,
   HelpCircle,
   Lightbulb,
   Loader2,
+  PenLine,
   RefreshCw,
   Volume2,
+  WifiOff,
   XCircle,
 } from "lucide-react";
 import type {
@@ -19,21 +22,52 @@ import type {
   TutorPersona,
 } from "../data/curriculum";
 
-interface LessonStep {
+interface LessonSection {
   heading: string;
   explanation: string;
   example: string;
+  keyPoint: string;
+}
+
+interface WrittenQuestion {
+  question: string;
+  maxMarks: number;
+  markingPoints: string[];
+  modelAnswer: string;
 }
 
 interface Lesson {
   title: string;
   objective: string;
-  steps: LessonStep[];
-  keyTakeaways: string[];
-  exercise: QuizQuestion[];
+  introduction: string;
+  estimatedMinutes: number;
+  sections: LessonSection[];
+  summary: string[];
+  mcq: QuizQuestion[];
+  written: WrittenQuestion[];
 }
 
-type Phase = "idle" | "loading" | "teaching" | "exercise" | "done";
+interface WrittenResult {
+  id: string;
+  score: number;
+  maxMarks: number;
+  feedback: string;
+  modelAnswer: string;
+}
+
+type Phase = "idle" | "loading" | "reading" | "exercise" | "marking" | "results";
+
+interface SavedProgress {
+  phase: "reading" | "exercise";
+  mcqAnswers: Record<number, number>;
+  writtenAnswers: Record<number, string>;
+}
+
+interface SavedLesson {
+  lesson: Lesson;
+  savedAt: number;
+  progress: SavedProgress | null;
+}
 
 interface LessonPanelProps {
   tutor: TutorPersona;
@@ -49,6 +83,49 @@ interface LessonPanelProps {
   speakingId: string | null;
 }
 
+// ---------- On-device storage (so lessons work offline and can be resumed) ----------
+const STORE_PREFIX = "kasukulu_lesson_v2:";
+const STORE_INDEX = "kasukulu_lesson_index_v2";
+const MAX_SAVED_LESSONS = 15;
+
+function isValidLesson(v: unknown): v is Lesson {
+  const l = v as Lesson;
+  return (
+    !!l &&
+    typeof l.title === "string" &&
+    Array.isArray(l.sections) &&
+    l.sections.length > 0 &&
+    Array.isArray(l.mcq) &&
+    Array.isArray(l.written) &&
+    Array.isArray(l.summary)
+  );
+}
+
+function readSaved(key: string): SavedLesson | null {
+  try {
+    const raw = localStorage.getItem(STORE_PREFIX + key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SavedLesson;
+    return isValidLesson(parsed?.lesson) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSaved(key: string, value: SavedLesson): void {
+  try {
+    localStorage.setItem(STORE_PREFIX + key, JSON.stringify(value));
+    const index: string[] = JSON.parse(localStorage.getItem(STORE_INDEX) ?? "[]");
+    const next = [key, ...index.filter((k) => k !== key)];
+    for (const old of next.slice(MAX_SAVED_LESSONS)) {
+      localStorage.removeItem(STORE_PREFIX + old);
+    }
+    localStorage.setItem(STORE_INDEX, JSON.stringify(next.slice(0, MAX_SAVED_LESSONS)));
+  } catch {
+    // Storage full or blocked: the lesson still works, it just won't be kept.
+  }
+}
+
 // Models tend to put the right answer in the same slot. Shuffle so it can't be guessed by position.
 function shuffleQuestion(q: QuizQuestion): QuizQuestion {
   const order = q.options.map((_, i) => i);
@@ -61,6 +138,22 @@ function shuffleQuestion(q: QuizQuestion): QuizQuestion {
     options: order.map((i) => q.options[i]),
     correctIndex: order.indexOf(q.correctIndex),
   };
+}
+
+function Paragraphs({ text, className }: { text: string; className?: string }) {
+  return (
+    <>
+      {text
+        .split(/\n{2,}/)
+        .map((p) => p.trim())
+        .filter(Boolean)
+        .map((p, i) => (
+          <p key={i} className={className ?? "text-sm text-slate-800 leading-relaxed"}>
+            {p}
+          </p>
+        ))}
+    </>
+  );
 }
 
 export function LessonPanel({
@@ -78,32 +171,72 @@ export function LessonPanel({
 }: LessonPanelProps) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [lesson, setLesson] = useState<Lesson | null>(null);
+  // The storage key the current lesson belongs to (so a topic switch can never save it under the wrong topic).
+  const [lessonKey, setLessonKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [stepIndex, setStepIndex] = useState(0);
-  const [qIndex, setQIndex] = useState(0);
-  const [picked, setPicked] = useState<number | null>(null);
-  const [score, setScore] = useState(0);
-  const [missed, setMissed] = useState<string[]>([]);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [saved, setSaved] = useState<SavedLesson | null>(null);
+
+  const [mcqAnswers, setMcqAnswers] = useState<Record<number, number>>({});
+  const [writtenAnswers, setWrittenAnswers] = useState<Record<number, string>>({});
+  const [confirmBlank, setConfirmBlank] = useState(false);
+
+  const [writtenResults, setWrittenResults] = useState<WrittenResult[] | null>(null);
+  const [markError, setMarkError] = useState<string | null>(null);
+  const [submittedMcq, setSubmittedMcq] = useState<Record<number, number>>({});
+  const [submittedWritten, setSubmittedWritten] = useState<Record<number, string>>({});
 
   const topicTitle =
     customTopic.trim() || activeTopic?.title || tutor.subjectFocus;
   const topicKey = `${activeTopic?.id ?? ""}|${customTopic.trim()}`;
+  const storageKey = `${profile.grade}|${profile.languageAid ?? ""}|${topicKey}`;
 
   // A different topic means the old lesson no longer applies.
   useEffect(() => {
     setPhase("idle");
     setLesson(null);
     setError(null);
-  }, [topicKey]);
+    setNotice(null);
+    setSaved(readSaved(storageKey));
+  }, [storageKey]);
+
+  // Keep the lesson and the learner's unfinished work on the device.
+  useEffect(() => {
+    if (!lesson || !lessonKey) return;
+    const progress: SavedProgress | null =
+      phase === "reading" || phase === "exercise"
+        ? { phase, mcqAnswers, writtenAnswers }
+        : null;
+    writeSaved(lessonKey, { lesson, savedAt: Date.now(), progress });
+  }, [lesson, lessonKey, phase, mcqAnswers, writtenAnswers]);
+
+  const clearAnswers = () => {
+    setMcqAnswers({});
+    setWrittenAnswers({});
+    setConfirmBlank(false);
+    setWrittenResults(null);
+    setMarkError(null);
+  };
+
+  const openSaved = (entry: SavedLesson, resume: boolean) => {
+    clearAnswers();
+    setLesson(entry.lesson);
+    setLessonKey(storageKey);
+    setError(null);
+    if (resume && entry.progress) {
+      setMcqAnswers(entry.progress.mcqAnswers ?? {});
+      setWrittenAnswers(entry.progress.writtenAnswers ?? {});
+      setPhase(entry.progress.phase);
+    } else {
+      setPhase("reading");
+    }
+  };
 
   const startLesson = async () => {
     setPhase("loading");
     setError(null);
-    setStepIndex(0);
-    setQIndex(0);
-    setPicked(null);
-    setScore(0);
-    setMissed([]);
+    setNotice(null);
+    clearAnswers();
     try {
       const res = await fetch("/api/tutor/lesson", {
         method: "POST",
@@ -123,13 +256,22 @@ export function LessonPanel({
       }
       const ready: Lesson = {
         ...data,
-        exercise: (data.exercise as QuizQuestion[]).map(shuffleQuestion),
+        mcq: (data.mcq as QuizQuestion[]).map(shuffleQuestion),
       };
       setLesson(ready);
-      setPhase("teaching");
+      setLessonKey(storageKey);
+      setPhase("reading");
     } catch (err) {
+      const offlineCopy = readSaved(storageKey);
+      if (offlineCopy) {
+        openSaved(offlineCopy, false);
+        setNotice(
+          "You're offline or the tutor is busy, so here is the lesson you saved earlier."
+        );
+        return;
+      }
       setError(
-        err instanceof Error
+        err instanceof Error && err.message
           ? err.message
           : "Could not reach Kasukulu. Check your connection and try again."
       );
@@ -146,32 +288,69 @@ export function LessonPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStart]);
 
-  const currentQuestion = useMemo(
-    () => lesson?.exercise[qIndex] ?? null,
-    [lesson, qIndex]
-  );
-
-  const answer = (optionIndex: number) => {
-    if (!currentQuestion || picked !== null) return;
-    setPicked(optionIndex);
-    const correct = optionIndex === currentQuestion.correctIndex;
-    if (correct) setScore((s) => s + 1);
-    else setMissed((m) => [...m, currentQuestion.question]);
-    onRecordQuizAnswer(correct, currentQuestion);
+  const markWritten = async (
+    forLesson: Lesson,
+    answers: Record<number, string>
+  ) => {
+    setMarkError(null);
+    setWrittenResults(null);
+    try {
+      const res = await fetch("/api/tutor/lesson/mark", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tutorId: tutor.id,
+          profile,
+          lessonTitle: forLesson.title,
+          takeaways: forLesson.summary,
+          items: forLesson.written.map((w, i) => ({
+            id: `w${i}`,
+            question: w.question,
+            maxMarks: w.maxMarks,
+            markingPoints: w.markingPoints,
+            answer: answers[i] ?? "",
+          })),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error || "Marking failed. Please try again.");
+      }
+      setWrittenResults(data.results as WrittenResult[]);
+    } catch (err) {
+      setMarkError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Could not reach Kasukulu to mark your written answers."
+      );
+    }
   };
 
-  const nextQuestion = () => {
+  const totalQuestions = lesson ? lesson.mcq.length + lesson.written.length : 0;
+  const answeredCount = lesson
+    ? lesson.mcq.filter((_, i) => mcqAnswers[i] !== undefined).length +
+      lesson.written.filter((_, i) => (writtenAnswers[i] ?? "").trim().length >= 2).length
+    : 0;
+  const blankCount = totalQuestions - answeredCount;
+
+  const submitExercise = async () => {
     if (!lesson) return;
-    if (qIndex + 1 >= lesson.exercise.length) {
-      setPhase("done");
-    } else {
-      setQIndex((i) => i + 1);
-      setPicked(null);
-    }
+    setConfirmBlank(false);
+    setSubmittedMcq(mcqAnswers);
+    setSubmittedWritten(writtenAnswers);
+    lesson.mcq.forEach((q, i) => {
+      if (mcqAnswers[i] !== undefined) {
+        onRecordQuizAnswer(mcqAnswers[i] === q.correctIndex, q);
+      }
+    });
+    setPhase("marking");
+    await markWritten(lesson, writtenAnswers);
+    setPhase("results");
   };
 
   // ---------- Idle / loading ----------
   if (phase === "idle" || phase === "loading") {
+    const resumable = saved?.progress ?? null;
     return (
       <div className="space-y-4">
         <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-amber-50/60 p-5 space-y-3">
@@ -187,9 +366,10 @@ export function LessonPanel({
                 {topicTitle}
               </h3>
               <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                A short class in easy steps. Each step has an example, and you
-                finish with a few questions to check what you understood. It
-                takes about 5 to 10 minutes.
+                First you read a full lesson with worked examples, about 15 to
+                20 minutes. Then you do an exercise with multiple-choice and
+                written questions. Your tutor marks it all and shows you how to
+                improve.
               </p>
             </div>
           </div>
@@ -204,6 +384,37 @@ export function LessonPanel({
             </div>
           )}
 
+          {saved && phase === "idle" && (
+            <div className="rounded-xl border border-slate-200 bg-white px-3.5 py-3 space-y-2">
+              <div className="flex items-start gap-2 text-xs text-slate-700">
+                <WifiOff className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                <span>
+                  {resumable
+                    ? "You have a lesson in progress on this phone. It works without internet."
+                    : "You saved this lesson on this phone. It works without internet."}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {resumable && (
+                  <button
+                    type="button"
+                    onClick={() => openSaved(saved, true)}
+                    className="px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold min-h-[40px] cursor-pointer"
+                  >
+                    Continue where I stopped
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => openSaved(saved, false)}
+                  className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 min-h-[40px] cursor-pointer"
+                >
+                  Open saved lesson
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -214,11 +425,13 @@ export function LessonPanel({
               {phase === "loading" ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Preparing your class…</span>
+                  <span>Your tutor is writing the lesson…</span>
                 </>
               ) : (
                 <>
-                  <span>{error ? "Try again" : "Start lesson"}</span>
+                  <span>
+                    {error ? "Try again" : saved ? "Start a new lesson" : "Start lesson"}
+                  </span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -232,6 +445,11 @@ export function LessonPanel({
               Choose another topic
             </button>
           </div>
+          {phase === "loading" && (
+            <p className="text-xs text-slate-500">
+              Your lesson takes up to a minute to prepare. Please wait.
+            </p>
+          )}
         </div>
       </div>
     );
@@ -239,115 +457,154 @@ export function LessonPanel({
 
   if (!lesson) return null;
 
-  // ---------- Teaching ----------
-  if (phase === "teaching") {
-    const step = lesson.steps[stepIndex];
-    const isLast = stepIndex === lesson.steps.length - 1;
-    const speakId = `lesson-step-${stepIndex}`;
-    const pct = Math.round(((stepIndex + 1) / lesson.steps.length) * 100);
+  const noticeBar = notice ? (
+    <div
+      role="status"
+      className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-900 flex items-start gap-2"
+    >
+      <WifiOff className="w-4 h-4 shrink-0 mt-0.5" />
+      <span>{notice}</span>
+    </div>
+  ) : null;
 
+  // ---------- Reading the lesson ----------
+  if (phase === "reading") {
     return (
-      <div className="space-y-4">
-        <div>
-          <div className="flex items-center justify-between gap-2 text-xs">
-            <span className="font-semibold text-slate-900 truncate">
-              {lesson.title}
-            </span>
-            <span className="text-slate-500 tabular-nums shrink-0">
-              Step {stepIndex + 1} of {lesson.steps.length}
+      <div className="space-y-5">
+        {noticeBar}
+
+        <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-amber-50/60 p-5 space-y-2.5">
+          <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-800">
+            <span>{profile.grade}</span>
+            <span aria-hidden="true">·</span>
+            <span className="inline-flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              About {lesson.estimatedMinutes} minutes to read
             </span>
           </div>
-          <div
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={lesson.steps.length}
-            aria-valuenow={stepIndex + 1}
-            aria-label="Lesson progress"
-            className="mt-2 h-2 rounded-full bg-slate-100 overflow-hidden"
-          >
-            <div
-              className="h-full bg-emerald-600 rounded-full transition-all duration-300"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
+          <h3 className="text-lg font-bold text-slate-900 leading-snug">
+            {lesson.title}
+          </h3>
+          {lesson.objective && (
+            <p className="text-sm text-slate-700 leading-relaxed">
+              <strong className="font-semibold">By the end you will: </strong>
+              {lesson.objective}
+            </p>
+          )}
         </div>
 
-        {stepIndex === 0 && lesson.objective && (
-          <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-3.5 py-2.5 text-xs text-emerald-900 leading-relaxed">
-            <strong className="font-semibold">By the end you will: </strong>
-            {lesson.objective}
+        {lesson.introduction && (
+          <div className="space-y-2">
+            <Paragraphs text={lesson.introduction} />
           </div>
         )}
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
-          <h3 className="text-base font-bold text-slate-900 leading-snug">
-            {stepIndex + 1}. {step.heading}
-          </h3>
-          <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-line">
-            {step.explanation}
-          </p>
-          {step.example && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 flex items-start gap-2.5">
-              <Lightbulb className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div className="text-sm text-amber-950 leading-relaxed whitespace-pre-line">
-                <strong className="font-semibold">Example: </strong>
-                {step.example}
+        {lesson.sections.map((sec, i) => {
+          const speakId = `lesson-section-${i}`;
+          return (
+            <article
+              key={i}
+              className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3.5"
+            >
+              <h4 className="text-base font-bold text-slate-900 leading-snug">
+                <span className="text-emerald-700 tabular-nums">{i + 1}.</span>{" "}
+                {sec.heading}
+              </h4>
+              <div className="space-y-2.5">
+                <Paragraphs text={sec.explanation} />
               </div>
+
+              {sec.example && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 flex items-start gap-2.5">
+                  <Lightbulb className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="space-y-2 min-w-0">
+                    <div className="text-xs font-bold uppercase tracking-wide text-amber-800">
+                      Worked example
+                    </div>
+                    <Paragraphs
+                      text={sec.example}
+                      className="text-sm text-amber-950 leading-relaxed"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {sec.keyPoint && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-sm text-emerald-950 leading-relaxed flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                  <span>
+                    <strong className="font-semibold">Remember: </strong>
+                    {sec.keyPoint}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    onSpeakText(
+                      `${sec.heading}. ${sec.explanation}`.slice(0, 1800),
+                      speakId
+                    )
+                  }
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-medium min-h-[40px] cursor-pointer"
+                >
+                  <Volume2 className="w-3.5 h-3.5" />
+                  {speakingId === speakId ? "Playing…" : "Listen to this part"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onAskTutorText(
+                      `I did not understand this part of the lesson "${lesson.title}": "${sec.heading}". ${sec.explanation} Please explain it again in an even simpler way with a different example.`
+                    )
+                  }
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-medium min-h-[40px] cursor-pointer"
+                >
+                  <HelpCircle className="w-3.5 h-3.5" />
+                  I don't understand
+                </button>
+              </div>
+            </article>
+          );
+        })}
+
+        {lesson.summary.length > 0 && (
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 space-y-2.5">
+            <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
+              <BookOpen className="w-4 h-4 text-emerald-700" />
+              Summary: remember these
             </div>
-          )}
-
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <button
-              type="button"
-              onClick={() =>
-                onSpeakText(`${step.heading}. ${step.explanation} Example. ${step.example}`, speakId)
-              }
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-medium min-h-[40px] cursor-pointer"
-            >
-              <Volume2 className="w-3.5 h-3.5" />
-              {speakingId === speakId ? "Playing…" : "Listen"}
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                onAskTutorText(
-                  `I did not understand this step of "${lesson.title}": "${step.heading}". ${step.explanation} Please explain it again in an even simpler way with a different example.`
-                )
-              }
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-medium min-h-[40px] cursor-pointer"
-            >
-              <HelpCircle className="w-3.5 h-3.5" />
-              I don't understand
-            </button>
+            <ul className="space-y-1.5">
+              {lesson.summary.map((k, i) => (
+                <li
+                  key={i}
+                  className="text-sm text-slate-800 leading-relaxed flex gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                  <span>{k}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-        </div>
+        )}
 
-        <div className="flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
-            disabled={stepIndex === 0}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 min-h-[44px] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </button>
+        <div className="rounded-2xl border-2 border-emerald-300 bg-emerald-50/60 p-5 text-center space-y-3">
+          <p className="text-sm text-slate-800 leading-relaxed">
+            Finished reading? Do the exercise to test what you learned. There
+            are {lesson.mcq.length} multiple-choice and {lesson.written.length}{" "}
+            written questions. You will see your marks after you finish.
+          </p>
           <button
             type="button"
             onClick={() => {
-              if (isLast) {
-                setPhase("exercise");
-                setQIndex(0);
-                setPicked(null);
-                setScore(0);
-                setMissed([]);
-              } else {
-                setStepIndex((i) => i + 1);
-              }
+              setPhase("exercise");
+              if (typeof window !== "undefined") window.scrollTo({ top: 0 });
             }}
-            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold min-h-[44px] cursor-pointer"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold min-h-[48px] cursor-pointer"
           >
-            {isLast ? "Check my understanding" : "Next step"}
+            I've finished reading. Start the exercise
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
@@ -355,100 +612,211 @@ export function LessonPanel({
     );
   }
 
-  // ---------- Exercise ----------
-  if (phase === "exercise" && currentQuestion) {
-    const answered = picked !== null;
-    const isCorrect = picked === currentQuestion.correctIndex;
+  // ---------- Exercise (answer everything, then submit) ----------
+  if (phase === "exercise") {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between text-xs">
-          <span className="font-semibold text-slate-900">
-            Check your understanding
-          </span>
-          <span className="text-slate-500 tabular-nums">
-            Question {qIndex + 1} of {lesson.exercise.length}
-          </span>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
-          <p className="text-sm font-semibold text-slate-900 leading-relaxed">
-            {currentQuestion.question}
+      <div className="space-y-5">
+        {noticeBar}
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-1.5">
+          <h3 className="text-base font-bold text-slate-900">
+            Exercise: {lesson.title}
+          </h3>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Answer every question on your own. You will see which answers are
+            right, with your marks and feedback, after you submit. Your answers
+            are saved on this phone as you go.
           </p>
-          <div className="space-y-2" role="group" aria-label="Answer choices">
-            {currentQuestion.options.map((opt, i) => {
-              const isPicked = picked === i;
-              const isRight = i === currentQuestion.correctIndex;
-              let style =
-                "border-slate-200 bg-white hover:border-emerald-400 hover:bg-emerald-50/40";
-              if (answered && isRight)
-                style = "border-emerald-600 bg-emerald-50 text-emerald-950";
-              else if (answered && isPicked)
-                style = "border-red-500 bg-red-50 text-red-950";
-              else if (answered) style = "border-slate-200 bg-white opacity-70";
-              return (
-                <button
-                  key={i}
-                  type="button"
-                  disabled={answered}
-                  onClick={() => answer(i)}
-                  className={`w-full text-left rounded-xl border px-3.5 py-3 text-sm leading-snug transition-colors min-h-[44px] flex items-start gap-2.5 ${style} ${
-                    answered ? "cursor-default" : "cursor-pointer"
-                  }`}
-                >
-                  <span className="font-mono text-xs text-slate-500 mt-0.5 shrink-0">
-                    {String.fromCharCode(65 + i)}
-                  </span>
-                  <span className="flex-1">{opt}</span>
-                  {answered && isRight && (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
-                  )}
-                  {answered && isPicked && !isRight && (
-                    <XCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                  )}
-                </button>
-              );
-            })}
+          <div className="text-xs font-semibold text-emerald-800 tabular-nums pt-1">
+            Answered {answeredCount} of {totalQuestions}
           </div>
-
-          {answered && (
-            <div
-              role="status"
-              className={`rounded-xl border px-3.5 py-3 text-sm leading-relaxed ${
-                isCorrect
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-950"
-                  : "border-amber-200 bg-amber-50 text-amber-950"
-              }`}
-            >
-              <strong className="font-semibold">
-                {isCorrect ? "Correct! " : "Not quite. "}
-              </strong>
-              {currentQuestion.explanation}
-            </div>
-          )}
         </div>
 
-        {answered && (
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={nextQuestion}
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold min-h-[44px] cursor-pointer"
+        <section aria-label="Part A: multiple choice" className="space-y-3">
+          <h4 className="text-sm font-bold text-slate-900">
+            Part A: Multiple choice{" "}
+            <span className="font-normal text-slate-500">
+              (1 mark each, choose one answer)
+            </span>
+          </h4>
+          {lesson.mcq.map((q, qi) => (
+            <fieldset
+              key={qi}
+              className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3"
             >
-              {qIndex + 1 >= lesson.exercise.length ? "See my result" : "Next question"}
-              <ArrowRight className="w-4 h-4" />
-            </button>
+              <legend className="sr-only">Question {qi + 1}</legend>
+              <p className="text-sm font-semibold text-slate-900 leading-relaxed">
+                <span className="text-emerald-700 tabular-nums">A{qi + 1}.</span>{" "}
+                {q.question}
+              </p>
+              <div className="space-y-2">
+                {q.options.map((opt, oi) => {
+                  const selected = mcqAnswers[qi] === oi;
+                  return (
+                    <label
+                      key={oi}
+                      className={`flex items-start gap-2.5 rounded-xl border px-3.5 py-3 text-sm leading-snug cursor-pointer transition-colors min-h-[44px] ${
+                        selected
+                          ? "border-emerald-600 bg-emerald-50 text-emerald-950"
+                          : "border-slate-200 bg-white hover:border-emerald-400 hover:bg-emerald-50/40"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={`mcq-${qi}`}
+                        checked={selected}
+                        onChange={() => {
+                          setMcqAnswers((prev) => ({ ...prev, [qi]: oi }));
+                          setConfirmBlank(false);
+                        }}
+                        className="mt-1 accent-emerald-700 shrink-0"
+                      />
+                      <span className="font-mono text-xs text-slate-500 mt-0.5 shrink-0">
+                        {String.fromCharCode(65 + oi)}
+                      </span>
+                      <span className="flex-1">{opt}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+          ))}
+        </section>
+
+        <section aria-label="Part B: written answers" className="space-y-3">
+          <h4 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+            <PenLine className="w-4 h-4 text-emerald-700" />
+            Part B: Written answers{" "}
+            <span className="font-normal text-slate-500">
+              (explain in your own words)
+            </span>
+          </h4>
+          {lesson.written.map((w, wi) => (
+            <div
+              key={wi}
+              className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3"
+            >
+              <p className="text-sm font-semibold text-slate-900 leading-relaxed">
+                <span className="text-emerald-700 tabular-nums">B{wi + 1}.</span>{" "}
+                {w.question}{" "}
+                <span className="text-xs font-medium text-slate-500 whitespace-nowrap">
+                  [{w.maxMarks} {w.maxMarks === 1 ? "mark" : "marks"}]
+                </span>
+              </p>
+              <label htmlFor={`written-${wi}`} className="sr-only">
+                Your answer to question B{wi + 1}
+              </label>
+              <textarea
+                id={`written-${wi}`}
+                value={writtenAnswers[wi] ?? ""}
+                onChange={(e) => {
+                  setWrittenAnswers((prev) => ({ ...prev, [wi]: e.target.value }));
+                  setConfirmBlank(false);
+                }}
+                maxLength={1500}
+                rows={5}
+                placeholder="Write your answer here. Show your working if you calculate."
+                className="w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm text-slate-900 leading-relaxed focus:outline-none focus:ring-2 focus:ring-emerald-600"
+              />
+            </div>
+          ))}
+        </section>
+
+        {confirmBlank && blankCount > 0 && (
+          <div
+            role="alert"
+            className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 space-y-2.5"
+          >
+            <p>
+              You have {blankCount} unanswered{" "}
+              {blankCount === 1 ? "question" : "questions"}. Submit anyway?
+              Unanswered questions get 0 marks.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmBlank(false)}
+                className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 min-h-[40px] cursor-pointer"
+              >
+                Keep working
+              </button>
+              <button
+                type="button"
+                onClick={() => void submitExercise()}
+                className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold min-h-[40px] cursor-pointer"
+              >
+                Submit anyway
+              </button>
+            </div>
           </div>
         )}
+
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => setPhase("reading")}
+            className="px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 min-h-[44px] cursor-pointer"
+          >
+            Back to the lesson
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (blankCount > 0) setConfirmBlank(true);
+              else void submitExercise();
+            }}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold min-h-[48px] cursor-pointer"
+          >
+            Submit for marking
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     );
   }
 
-  // ---------- Done ----------
-  const total = lesson.exercise.length;
-  const pct = Math.round((score / total) * 100);
-  const strong = pct >= 75;
+  // ---------- Marking ----------
+  if (phase === "marking") {
+    return (
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-8 text-center space-y-3">
+        <Loader2 className="w-7 h-7 text-emerald-700 mx-auto animate-spin" />
+        <div className="text-sm font-semibold text-slate-900">
+          {tutor.name} is marking your work…
+        </div>
+        <p className="text-xs text-slate-600">
+          Reading your written answers carefully. This can take up to a minute.
+        </p>
+      </div>
+    );
+  }
+
+  // ---------- Results ----------
+  const mcqScore = lesson.mcq.filter(
+    (q, i) => submittedMcq[i] === q.correctIndex
+  ).length;
+  const writtenMax = lesson.written.reduce((n, w) => n + w.maxMarks, 0);
+  const writtenScore = writtenResults
+    ? writtenResults.reduce((n, r) => n + r.score, 0)
+    : 0;
+  const writtenPending = writtenResults === null;
+  const gotMax = lesson.mcq.length + (writtenPending ? 0 : writtenMax);
+  const gotScore = mcqScore + writtenScore;
+  const pct = gotMax > 0 ? Math.round((gotScore / gotMax) * 100) : 0;
+  const strong = pct >= 70;
+
+  const mistakes: string[] = [
+    ...lesson.mcq
+      .filter((q, i) => submittedMcq[i] !== q.correctIndex)
+      .map((q) => q.question),
+    ...lesson.written
+      .filter((w, i) => {
+        const r = writtenResults?.find((x) => x.id === `w${i}`);
+        return r ? r.score < r.maxMarks : false;
+      })
+      .map((w) => w.question),
+  ];
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div
         className={`rounded-2xl border p-5 text-center space-y-2 ${
           strong
@@ -457,46 +825,151 @@ export function LessonPanel({
         }`}
       >
         <div className="text-3xl font-bold text-slate-900 tabular-nums">
-          {score} / {total}
+          {gotScore} / {gotMax}
+          <span className="text-base text-slate-500 font-semibold"> · {pct}%</span>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs font-semibold text-slate-700 tabular-nums">
+          <span>
+            Multiple choice: {mcqScore} / {lesson.mcq.length}
+          </span>
+          <span>
+            Written: {writtenPending ? "not marked yet" : `${writtenScore} / ${writtenMax}`}
+          </span>
         </div>
         <div className="text-sm font-semibold text-slate-900">
           {strong
             ? "Well done! You understood this lesson. 🎉"
-            : "Good effort. Let's go over it once more."}
+            : "Good effort. Read the feedback below and review the lesson."}
         </div>
-        <p className="text-xs text-slate-600">
-          {strong
-            ? "Try another topic, or revise this one again later to keep it fresh."
-            : "Read the steps again, or ask your tutor to explain the parts you missed."}
-        </p>
       </div>
 
-      {lesson.keyTakeaways.length > 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
-          <div className="text-xs font-semibold text-slate-900">
-            Remember these
-          </div>
-          <ul className="space-y-1.5">
-            {lesson.keyTakeaways.map((k, i) => (
-              <li
-                key={i}
-                className="text-sm text-slate-800 leading-relaxed flex gap-2"
-              >
-                <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
-                <span>{k}</span>
-              </li>
-            ))}
-          </ul>
+      {writtenPending && (
+        <div
+          role="alert"
+          className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 space-y-2"
+        >
+          <p>
+            {markError ??
+              "Your written answers could not be marked yet."}{" "}
+            Your multiple-choice marks are shown. Your answers are safe.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setPhase("marking");
+              void markWritten(lesson, submittedWritten).then(() =>
+                setPhase("results")
+              );
+            }}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold min-h-[40px] cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Try marking again
+          </button>
         </div>
       )}
 
+      <section aria-label="Multiple choice review" className="space-y-3">
+        <h4 className="text-sm font-bold text-slate-900">
+          Part A: Multiple choice
+        </h4>
+        {lesson.mcq.map((q, i) => {
+          const chosen = submittedMcq[i];
+          const right = chosen === q.correctIndex;
+          return (
+            <div
+              key={i}
+              className={`rounded-2xl border p-4 space-y-2 ${
+                right
+                  ? "border-emerald-200 bg-emerald-50/50"
+                  : "border-red-200 bg-red-50/40"
+              }`}
+            >
+              <div className="flex items-start gap-2">
+                {right ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                ) : (
+                  <XCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                )}
+                <p className="text-sm font-semibold text-slate-900 leading-relaxed">
+                  A{i + 1}. {q.question}
+                </p>
+              </div>
+              <p className="text-xs text-slate-700 pl-6">
+                Your answer:{" "}
+                <strong className="font-semibold">
+                  {chosen === undefined ? "No answer" : q.options[chosen]}
+                </strong>
+              </p>
+              {!right && (
+                <p className="text-xs text-emerald-900 pl-6">
+                  Correct answer:{" "}
+                  <strong className="font-semibold">
+                    {q.options[q.correctIndex]}
+                  </strong>
+                </p>
+              )}
+              <p className="text-xs text-slate-700 leading-relaxed pl-6">
+                {q.explanation}
+              </p>
+            </div>
+          );
+        })}
+      </section>
+
+      <section aria-label="Written answers review" className="space-y-3">
+        <h4 className="text-sm font-bold text-slate-900">Part B: Written answers</h4>
+        {lesson.written.map((w, i) => {
+          const r = writtenResults?.find((x) => x.id === `w${i}`);
+          const mine = (submittedWritten[i] ?? "").trim();
+          return (
+            <div
+              key={i}
+              className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2.5"
+            >
+              <p className="text-sm font-semibold text-slate-900 leading-relaxed">
+                B{i + 1}. {w.question}
+              </p>
+              <div className="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5 text-sm text-slate-800 leading-relaxed whitespace-pre-line">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                  Your answer
+                </div>
+                {mine || "No answer written."}
+              </div>
+              {r ? (
+                <div
+                  className={`rounded-xl border px-3.5 py-3 text-sm leading-relaxed space-y-2 ${
+                    r.score >= r.maxMarks
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-950"
+                      : "border-amber-200 bg-amber-50 text-amber-950"
+                  }`}
+                >
+                  <div className="font-bold tabular-nums">
+                    {r.score} / {r.maxMarks} marks
+                  </div>
+                  <p>{r.feedback}</p>
+                  {(r.modelAnswer || w.modelAnswer) && (
+                    <p className="text-xs border-t border-black/10 pt-2">
+                      <strong className="font-semibold">A good answer: </strong>
+                      {r.modelAnswer || w.modelAnswer}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="text-xs text-slate-500">Waiting to be marked.</div>
+              )}
+            </div>
+          );
+        })}
+      </section>
+
       <div className="flex flex-wrap items-center gap-2">
-        {missed.length > 0 && (
+        {mistakes.length > 0 && (
           <button
             type="button"
             onClick={() =>
               onAskTutorText(
-                `I just finished a lesson on "${lesson.title}" and got these wrong: ${missed
+                `I just finished the lesson "${lesson.title}" and lost marks on these questions: ${mistakes
                   .map((m) => `"${m}"`)
                   .join("; ")}. Please explain each one simply and step by step.`
               )
@@ -510,13 +983,25 @@ export function LessonPanel({
         <button
           type="button"
           onClick={() => {
-            setPhase("teaching");
-            setStepIndex(0);
+            setPhase("reading");
+            if (typeof window !== "undefined") window.scrollTo({ top: 0 });
+          }}
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 min-h-[44px] cursor-pointer"
+        >
+          <BookOpen className="w-4 h-4" />
+          Read the lesson again
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            clearAnswers();
+            setPhase("exercise");
+            if (typeof window !== "undefined") window.scrollTo({ top: 0 });
           }}
           className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 min-h-[44px] cursor-pointer"
         >
           <RefreshCw className="w-4 h-4" />
-          Review the steps
+          Try the exercise again
         </button>
         <button
           type="button"
