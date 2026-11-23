@@ -50,6 +50,7 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
       "Your learner profile: first name, school (optional), grade, province, language preference and learning pace.",
       "Your progress: topics studied, quiz results, daily activity, streaks, points and badges.",
       "Your study tools: flashcards, mistake bank, study calendar, lesson notes, saved lessons and settings.",
+      "A random anonymous ID for this device. It contains no personal details and is sent with AI requests so each learner gets a fair daily allowance.",
     ],
   },
   {

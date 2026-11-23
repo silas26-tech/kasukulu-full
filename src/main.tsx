@@ -2,6 +2,9 @@ import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import { installDeviceIdHeader } from './utils/deviceId';
+
+installDeviceIdHeader();
 
 declare global {
   interface Window {

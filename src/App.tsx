@@ -48,6 +48,7 @@ import { VoiceWaveform } from "./components/VoiceWaveform";
 import { ProfileModal } from "./components/ProfileModal";
 import { WelcomeOnboarding } from "./components/WelcomeOnboarding";
 import { LegalModal, type LegalTab } from "./components/LegalModal";
+import { getDeviceId } from "./utils/deviceId";
 import { HomeHub, type HomeDestination } from "./components/HomeHub";
 import { PastPapersPanel } from "./components/PastPapersPanel";
 import { SubjectsPanel } from "./components/SubjectsPanel";
@@ -769,7 +770,9 @@ export default function App() {
       liveTurnSealedRef.current = { learner: true, tutor: true };
 
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const ws = new WebSocket(`${protocol}//${window.location.host}/live`);
+      const ws = new WebSocket(
+        `${protocol}//${window.location.host}/live?d=${getDeviceId()}`
+      );
       wsRef.current = ws;
 
       ws.onopen = () => {

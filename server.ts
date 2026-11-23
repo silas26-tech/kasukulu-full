@@ -217,6 +217,9 @@ const RATE_WINDOW_MS = 10 * 60 * 1000;
 const AI_RATE_LIMIT = Number(process.env.AI_RATE_LIMIT) || 120;
 const AI_DAILY_BUDGET = Number(process.env.AI_DAILY_BUDGET) || 20000;
 const LIVE_MAX_PER_IP = Number(process.env.LIVE_MAX_PER_IP) || 5;
+// Each learner (anonymous device ID) gets their own daily allowance so a few heavy
+// users cannot use up the whole Gemini quota. 1 point per request; a live call costs 10.
+const AI_USER_DAILY = Number(process.env.AI_USER_DAILY) || 60;
 const LIVE_START_COST = 10; // a live voice session costs far more than one request
 const TRUST_PROXY_HOPS =
   process.env.TRUST_PROXY_HOPS !== undefined
@@ -239,12 +242,60 @@ function clientIp(req: http.IncomingMessage): string {
   return req.socket.remoteAddress ?? "unknown";
 }
 
+const userUsage = new Map<string, number>();
+let userUsageDay = "";
+
+function deviceIdFrom(req: http.IncomingMessage): string | null {
+  const header = req.headers["x-kasukulu-device"];
+  let raw = Array.isArray(header) ? header[0] : header;
+  if (!raw && req.url) {
+    try {
+      raw = new URL(req.url, "http://x").searchParams.get("d") ?? undefined;
+    } catch {
+      raw = undefined;
+    }
+  }
+  return raw && /^[a-f0-9]{32}$/.test(raw) ? raw : null;
+}
+
+/** Per-learner daily allowance. Days roll over at midnight Zambia time (UTC+2). */
+function checkUserAllowance(
+  deviceId: string | null,
+  cost: number
+): { message: string; retryAfterSec: number } | null {
+  if (!deviceId) return null; // the per-IP limit still applies
+  const now = Date.now();
+  const zambiaNow = new Date(now + 2 * 60 * 60 * 1000);
+  const day = zambiaNow.toISOString().slice(0, 10);
+  if (day !== userUsageDay) {
+    userUsageDay = day;
+    userUsage.clear();
+  }
+  const used = userUsage.get(deviceId) ?? 0;
+  if (used + cost > AI_USER_DAILY) {
+    const msLeft =
+      Date.UTC(zambiaNow.getUTCFullYear(), zambiaNow.getUTCMonth(), zambiaNow.getUTCDate() + 1) -
+      zambiaNow.getTime();
+    return {
+      message:
+        "You've used all your free tutor time for today. Great effort! Come back tomorrow for more.",
+      retryAfterSec: Math.max(60, Math.ceil(msLeft / 1000)),
+    };
+  }
+  userUsage.set(deviceId, used + cost);
+  return null;
+}
+
 /** Returns null if allowed, otherwise a friendly reason and retry delay. */
 function checkAiAllowance(
   ip: string,
-  cost = 1
+  cost = 1,
+  deviceId: string | null = null
 ): { message: string; retryAfterSec: number } | null {
   const now = Date.now();
+
+  const userBlocked = checkUserAllowance(deviceId, cost);
+  if (userBlocked) return userBlocked;
 
   const today = new Date(now).toISOString().slice(0, 10);
   if (today !== budgetDay) {
@@ -411,7 +462,7 @@ async function startServer() {
   app.use(
     ["/api/tutor", "/api/competitions/mark"],
     (req: express.Request, res: express.Response, next: express.NextFunction) => {
-      const blocked = checkAiAllowance(clientIp(req));
+      const blocked = checkAiAllowance(clientIp(req), 1, deviceIdFrom(req));
       if (blocked) {
         res.set("Retry-After", String(blocked.retryAfterSec));
         res.status(429).json({ error: blocked.message });
@@ -1542,7 +1593,7 @@ async function startServer() {
         const blocked =
           openNow >= LIVE_MAX_PER_IP
             ? { message: "Too many live sessions open on this connection." }
-            : checkAiAllowance(ip, LIVE_START_COST);
+            : checkAiAllowance(ip, LIVE_START_COST, deviceIdFrom(req));
         if (blocked) {
           socket.write("HTTP/1.1 429 Too Many Requests\r\nConnection: close\r\n\r\n");
           socket.destroy();
