@@ -33,6 +33,7 @@ import {
   type StudyCalendarState,
 } from "../data/studyCalendar";
 import { DailyGoalCard } from "./DailyGoalCard";
+import { LevelAndBadgesCard } from "./LevelAndBadgesCard";
 import { TutorPortrait } from "./TutorPortrait";
 import type { StudyTab } from "./RightStudyPanel";
 import deskBannerImg from "../assets/images/banner_kasukulu_desk_1794757601425.jpg";
@@ -343,6 +344,9 @@ export function HomeHub({
           onOpenDestination({ tab: "blackboard", voiceMode: "live" })
         }
       />
+
+      {/* Level, points and badges */}
+      <LevelAndBadgesCard progress={progress} studyStreak={studyStreak} />
 
       {/* Streak Milestones & Rewards */}
       <section aria-label="Streak Milestones" className="space-y-3">
