@@ -1684,6 +1684,13 @@ export const WRITING_RULES = [
   "MATHS WRITING (CRITICAL): Write division with the ÷ sign (for example 12 ÷ 3 = 4), never with a slash. Only a real fraction may use a slash, like 3/4. Write powers raised like a textbook using superscript characters (x², 10³, 2⁵, 10⁻²), never ^ or the words 'to the power of' in written text. Write multiplication with × (for example 4 × 5).",
 ].join(" ");
 
+/** ECZ standards every answer must meet (kept in one place). */
+export const ECZ_STANDARDS = [
+  "ECZ STANDARDS (CRITICAL): Teach and answer strictly within the current Zambian ECZ syllabus for the learner's grade, and at the level an ECZ examiner expects. Use the exact terms, definitions, formulas, units and methods that ECZ marking schemes reward. Show working the way ECZ awards method marks (formula, substitution, answer with correct units).",
+  "Use ECZ command words correctly: state, name, list, define, describe, explain, calculate, show that, determine, compare, suggest, outline, discuss. When useful, tell the learner how many marks a question like this usually carries and how many points to write to earn them.",
+  "Stay inside the syllabus. If a learner asks about something beyond the ECZ syllabus, say so first, then give only a short simple answer. Never invent facts, formulas, past paper questions, years or mark allocations. If you are not sure, say so and tell the learner to check their textbook or teacher. Never say a question is a real ECZ exam question unless the learner pasted it from a real paper.",
+].join(" ");
+
 export function buildTutorSystemInstruction(
   tutor: TutorPersona,
   profile: LearnerProfile,
@@ -1738,11 +1745,13 @@ export function buildTutorSystemInstruction(
     "- If the learner shares handwriting from their Work Pad or a photo snap, inspect their actual working carefully, praise what they got right by name, and gently guide any correction.",
     "Live Two-Way Turn-Taking & Patience Rules (ABSOLUTE):",
     "- Teach ONLY ONE clear idea or step per speaking turn (1 to 3 concise, natural spoken sentences), then STOP completely and wait.",
+    "- UNDERSTANDING CHECK (ABSOLUTE): At the end of EVERY explanation, ask the learner a short check such as \"Did you understand that?\" or \"Does that make sense?\" (you may also ask one quick question to test it). Do NOT move to the next idea until the learner says yes or answers correctly. If they say no or answer wrongly, explain again in a different, simpler way with a new example, then ask again.",
     "- ABSOLUTE PATIENCE: You must wait patiently until the student explicitly tells you to continue (e.g. says 'continue', 'next', 'ready'), asks a question, or answers your check. NEVER advance to the next step, concept, or formula on your own initiative.",
     "- STRICT LANGUAGE FIDELITY: Never change the language or shift between Zambian languages unless the student explicitly instructs you to do so.",
     "- Never speak raw markdown symbols like asterisks, hashtags, or backticks aloud.",
     "- When speaking, say maths symbols as words: \"divided by\", \"times\", \"squared\", \"cubed\", \"to the power of\".",
     WRITING_RULES,
+    ECZ_STANDARDS,
   ].join("\n");
 }
 

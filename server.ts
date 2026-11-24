@@ -855,7 +855,7 @@ async function startServer() {
       const safeCustom = cleanLine(customTopic, 200);
       // The tutor is decided by the topic, so ready-made topics share one lesson per grade.
       const cacheKey = [
-        "v5",
+        "v6",
         topicId ? "" : tutorId,
         profile?.grade ?? "",
         profile?.languageAid ?? "",
@@ -895,7 +895,7 @@ async function startServer() {
         contents: [
           `Write a short, focused lesson on ONE single topic: "${focusTitle}" for a ${profile.grade} Zambian learner (${profile.pace} pace) following the ECZ syllabus. It should take a learner about 10 to 12 minutes to read and work through. Teach ONLY this one topic. Do NOT wander into other topics, other chapters or the wider syllabus. If the topic title is very broad, choose its single most important idea and teach only that. If you need an idea from another topic, mention it in one short sentence and move on.`,
           "TEACHING STYLE: very simple English that a Grade 7 learner can follow, like a patient teacher talking to one learner. Short sentences. Everyday words. Define every hard word the first time it appears. Build from what the learner already knows, then go a little deeper, one small idea at a time.",
-          "STRUCTURE: an introduction (2 to 4 short sentences saying what the topic is and why it matters in real life). Then exactly 5 sections. Each section covers one small idea of this topic only and has a heading, an explanation of 100 to 160 words (use blank lines between short paragraphs), a fully worked example of 50 to 80 words showing every step and the reasoning, and one keyPoint sentence to remember. Include the common mistakes learners make. At least half of the examples must use everyday Zambian life (kwacha, nshima, maize, minibuses, markets, football, villages and towns).",
+          "STRUCTURE: an introduction (2 to 4 short sentences saying what the topic is and why it matters in real life). Then exactly 5 sections. Each section covers one small idea of this topic only and has a heading, an explanation of 100 to 160 words (use blank lines between short paragraphs), a fully worked example of 50 to 80 words showing every step and the reasoning, one keyPoint sentence to remember, a checkQuestion (one short question that tests only this section) and a checkAnswer (the answer in one short sentence). Include the common mistakes learners make. At least half of the examples must use everyday Zambian life (kwacha, nshima, maize, minibuses, markets, football, villages and towns).",
           "Finish with 4 to 5 summary points.",
           "EXERCISE (it tests only what the lesson taught): 5 multiple-choice questions (exactly 4 plain-text options, no A-D prefixes, a 0-based correctIndex, and a short kind explanation) and 2 written questions. Written questions ask the learner to explain, work out, or apply an idea in their own words. Give each written question a maxMarks of 2, 3 or 4, a list of 2 to 4 markingPoints (the specific ideas or steps that earn marks) and a short modelAnswer.",
           WRITING_RULES,
@@ -918,8 +918,10 @@ async function startServer() {
                     explanation: { type: Type.STRING },
                     example: { type: Type.STRING },
                     keyPoint: { type: Type.STRING },
+                    checkQuestion: { type: Type.STRING },
+                    checkAnswer: { type: Type.STRING },
                   },
-                  required: ["heading", "explanation", "example", "keyPoint"],
+                  required: ["heading", "explanation", "example", "keyPoint", "checkQuestion", "checkAnswer"],
                 },
               },
               summary: { type: Type.ARRAY, items: { type: Type.STRING } },
@@ -1007,6 +1009,8 @@ async function startServer() {
           explanation: str(sec?.explanation, 3800),
           example: str(sec?.example, 3000),
           keyPoint: str(sec?.keyPoint, 300),
+          checkQuestion: str(sec?.checkQuestion, 300),
+          checkAnswer: str(sec?.checkAnswer, 400),
         }))
         .filter((sec: { heading: string; explanation: string }) => sec.heading && sec.explanation)
         .slice(0, 12);

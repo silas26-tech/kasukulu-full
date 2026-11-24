@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { readJsonLoose } from "../utils/readJson";
 import {
   AlertCircle,
@@ -28,6 +28,8 @@ interface LessonSection {
   explanation: string;
   example: string;
   keyPoint: string;
+  checkQuestion?: string;
+  checkAnswer?: string;
 }
 
 interface WrittenQuestion {
@@ -60,6 +62,7 @@ type Phase = "idle" | "loading" | "reading" | "exercise" | "marking" | "results"
 
 interface SavedProgress {
   phase: "reading" | "exercise";
+  sectionIndex?: number;
   mcqAnswers: Record<number, number>;
   writtenAnswers: Record<number, string>;
 }
@@ -177,6 +180,10 @@ export function LessonPanel({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [saved, setSaved] = useState<SavedLesson | null>(null);
+  // Taught one part at a time. The learner confirms they understood before moving on.
+  const [sectionIndex, setSectionIndex] = useState(0);
+  const [showCheckAnswer, setShowCheckAnswer] = useState(false);
+  const readingTopRef = useRef<HTMLDivElement | null>(null);
 
   const [mcqAnswers, setMcqAnswers] = useState<Record<number, number>>({});
   const [writtenAnswers, setWrittenAnswers] = useState<Record<number, string>>({});
@@ -206,12 +213,14 @@ export function LessonPanel({
     if (!lesson || !lessonKey) return;
     const progress: SavedProgress | null =
       phase === "reading" || phase === "exercise"
-        ? { phase, mcqAnswers, writtenAnswers }
+        ? { phase, sectionIndex, mcqAnswers, writtenAnswers }
         : null;
     writeSaved(lessonKey, { lesson, savedAt: Date.now(), progress });
-  }, [lesson, lessonKey, phase, mcqAnswers, writtenAnswers]);
+  }, [lesson, lessonKey, phase, sectionIndex, mcqAnswers, writtenAnswers]);
 
   const clearAnswers = () => {
+    setSectionIndex(0);
+    setShowCheckAnswer(false);
     setMcqAnswers({});
     setWrittenAnswers({});
     setConfirmBlank(false);
@@ -227,6 +236,9 @@ export function LessonPanel({
     if (resume && entry.progress) {
       setMcqAnswers(entry.progress.mcqAnswers ?? {});
       setWrittenAnswers(entry.progress.writtenAnswers ?? {});
+      setSectionIndex(
+        Math.max(0, Math.min(entry.progress.sectionIndex ?? 0, entry.lesson.sections.length))
+      );
       setPhase(entry.progress.phase);
     } else {
       setPhase("reading");
@@ -470,8 +482,17 @@ export function LessonPanel({
 
   // ---------- Reading the lesson ----------
   if (phase === "reading") {
+    const totalParts = lesson.sections.length;
+    const finished = sectionIndex >= totalParts;
+    const goToPart = (next: number) => {
+      setSectionIndex(next);
+      setShowCheckAnswer(false);
+      window.setTimeout(() => {
+        readingTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 30);
+    };
     return (
-      <div className="space-y-5">
+      <div ref={readingTopRef} className="space-y-5 scroll-mt-20">
         {noticeBar}
 
         <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-amber-50/60 p-5 space-y-2.5">
@@ -494,15 +515,41 @@ export function LessonPanel({
           )}
         </div>
 
-        {lesson.introduction && (
+        {!finished && (
+          <div
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={totalParts}
+            aria-valuenow={sectionIndex + 1}
+            aria-label="Lesson progress"
+            className="space-y-1.5"
+          >
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
+              <span>
+                Part {sectionIndex + 1} of {totalParts}
+              </span>
+              <span>One small idea at a time</span>
+            </div>
+            <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-emerald-600 transition-all duration-300"
+                style={{ width: `${Math.round(((sectionIndex + 1) / totalParts) * 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {sectionIndex === 0 && lesson.introduction && (
           <div className="space-y-2">
             <Paragraphs text={lesson.introduction} />
           </div>
         )}
 
-        {lesson.sections.map((sec, i) => {
+        {!finished && [lesson.sections[sectionIndex]].map((sec) => {
+          const i = sectionIndex;
           const speakId = `lesson-section-${i}`;
           return (
+            <div key={i} className="space-y-4">
             <article
               key={i}
               className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3.5"
@@ -568,8 +615,74 @@ export function LessonPanel({
                 </button>
               </div>
             </article>
+
+            {sec.checkQuestion && (
+              <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-4 space-y-2.5">
+                <div className="text-xs font-bold uppercase tracking-wide text-sky-800">
+                  Quick check
+                </div>
+                <p className="text-sm font-semibold text-slate-900 leading-relaxed">
+                  {sec.checkQuestion}
+                </p>
+                {showCheckAnswer ? (
+                  <p className="text-sm text-sky-950 leading-relaxed rounded-xl bg-white border border-sky-200 px-3 py-2.5">
+                    <strong className="font-semibold">Answer: </strong>
+                    {sec.checkAnswer}
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowCheckAnswer(true)}
+                    className="px-4 py-2 rounded-lg bg-white border border-sky-300 text-sky-900 text-xs font-semibold hover:bg-sky-100 min-h-[40px] cursor-pointer"
+                  >
+                    Think first, then show the answer
+                  </button>
+                )}
+              </div>
+            )}
+
+            <div className="rounded-2xl border-2 border-emerald-300 bg-emerald-50/60 p-4 space-y-3">
+              <p className="text-sm font-semibold text-slate-900">
+                Did you understand this part?
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => goToPart(i + 1)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold min-h-[44px] cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  {i + 1 < totalParts ? "Yes, go to the next part" : "Yes, I'm ready to finish"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onAskTutorText(
+                      `I did not understand this part of the lesson "${lesson.title}": "${sec.heading}". ${sec.explanation} Please explain it again in an even simpler way with a different example, then ask me if I understood.`
+                    )
+                  }
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-800 text-sm font-semibold hover:bg-slate-50 min-h-[44px] cursor-pointer"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  Not yet. Explain it again
+                </button>
+              </div>
+              {i > 0 && (
+                <button
+                  type="button"
+                  onClick={() => goToPart(i - 1)}
+                  className="text-xs font-semibold text-slate-600 underline cursor-pointer"
+                >
+                  Go back to the previous part
+                </button>
+              )}
+            </div>
+            </div>
           );
         })}
+
+        {finished && (
+          <>
 
         {lesson.summary.length > 0 && (
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 space-y-2.5">
@@ -608,7 +721,18 @@ export function LessonPanel({
             I've finished reading. Start the exercise
             <ArrowRight className="w-4 h-4" />
           </button>
+          <div>
+            <button
+              type="button"
+              onClick={() => goToPart(totalParts - 1)}
+              className="text-xs font-semibold text-slate-600 underline cursor-pointer"
+            >
+              Go back to the last part
+            </button>
+          </div>
         </div>
+          </>
+        )}
       </div>
     );
   }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   BarChart3,
@@ -160,6 +160,25 @@ export function RightStudyPanel({
   );
   const [alevelSubjectFilter, setAlevelSubjectFilter] = useState<string>("All");
   const [autoStartLesson, setAutoStartLesson] = useState(false);
+
+  // Lessons, exams and the other tools open right at the top of the screen,
+  // so the learner does not have to scroll down to find them.
+  const panelRef = useRef<HTMLElement | null>(null);
+  const firstRender = useRef(true);
+  useEffect(() => {
+    const el = panelRef.current;
+    const isFirst = firstRender.current;
+    firstRender.current = false;
+    if (!el || activeTab === "blackboard" || liveCallActive) return;
+    const timer = window.setTimeout(() => {
+      const top = el.getBoundingClientRect().top;
+      if (top > 140 || top < -40) {
+        el.scrollIntoView({ behavior: isFirst ? "auto" : "smooth", block: "start" });
+      }
+    }, 60);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
   const [selectedAnswers, setSelectedAnswers] = useState<
     Record<number, number>
   >({});
@@ -221,8 +240,9 @@ export function RightStudyPanel({
 
   return (
     <section
+      ref={panelRef}
       aria-label="Study Blackboard, Work Pad, and ECZ Tools"
-      className="flex flex-col rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xs"
+      className="flex flex-col rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xs scroll-mt-20"
     >
       {/* Segmented Study Panel Tabs */}
       <div className="border-b border-slate-200 bg-slate-50/90 px-3 sm:px-5 py-3">
