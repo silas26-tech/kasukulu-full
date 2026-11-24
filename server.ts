@@ -755,6 +755,7 @@ async function startServer() {
   // A full reading lesson (about 10 to 15 minutes) followed by an exercise that mixes
   // multiple-choice and written questions covering everything taught.
   app.post("/api/tutor/lesson", async (req, res) => {
+    let heartbeat: ReturnType<typeof setInterval> | null = null;
     try {
       const {
         tutorId,
@@ -792,6 +793,20 @@ async function startServer() {
       const topic = ECZ_TOPICS.find((t) => t.id === topicId) ?? null;
       const baseInstruction = buildTutorSystemInstruction(tutor, profile, topic);
       const focusTitle = safeCustom || topic?.title || tutor.subjectFocus;
+
+      // Writing a lesson can take a minute or more. Many hosts cut a request that
+      // sends nothing for ~100 seconds, so answer right away and keep the line alive
+      // with blank spaces (valid before JSON) until the lesson is ready.
+      res.status(200);
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.setHeader("Cache-Control", "no-store");
+      res.flushHeaders();
+      heartbeat = setInterval(() => {
+        if (!res.writableEnded) res.write(" ");
+      }, 8000);
+      res.on("close", () => {
+        if (heartbeat) clearInterval(heartbeat);
+      });
 
       const lessonPayload: GenerateContentPayload = {
         contents: [
@@ -869,17 +884,7 @@ async function startServer() {
       let raw: any = null;
       let lastParseError: unknown = null;
       for (let attempt = 1; attempt <= 3 && raw === null; attempt++) {
-        // Third try uses the lighter backup model in case the main one keeps failing.
-        const response =
-          attempt < 3
-            ? await generateContentWithFallback(ai, lessonPayload)
-            : await generateContentWithFallback(
-                ai,
-                lessonPayload,
-                "gemini-3.1-flash-lite",
-                ""
-              );
-        const finish = (response as any)?.candidates?.[0]?.finishReason;
+        const response = await generateContentWithFallback(ai, lessonPayload);
         try {
           const parsed = parseModelJson(response.text);
           if (
@@ -892,25 +897,22 @@ async function startServer() {
             raw = parsed;
           } else {
             lastParseError = new Error("The AI lesson was incomplete.");
-            console.warn(
-              `Lesson reply incomplete (attempt ${attempt}). finishReason=${finish}, keys=${Object.keys(parsed ?? {}).join(",")}`
-            );
           }
         } catch (parseErr) {
           lastParseError = parseErr;
-          console.warn(
-            `Lesson reply unreadable (attempt ${attempt}). finishReason=${finish}, length=${String(response.text ?? "").length}, start=${JSON.stringify(String(response.text ?? "").slice(0, 160))}, end=${JSON.stringify(String(response.text ?? "").slice(-160))}`,
-            parseErr
-          );
+          console.warn(`Lesson reply unreadable (attempt ${attempt}):`, parseErr);
         }
       }
       if (raw === null) {
         console.error("Lesson could not be built after retries:", lastParseError);
         refundAllowance(req);
-        res.status(503).json({
-          error:
-            "The lesson took too long to prepare. Please tap Try again in a moment.",
-        });
+        if (heartbeat) clearInterval(heartbeat);
+        res.end(
+          JSON.stringify({
+            error:
+              "The lesson took too long to prepare. Please tap Try again in a moment.",
+          })
+        );
         return;
       }
       const str = (v: unknown, max: number) => String(v ?? "").trim().slice(0, max);
@@ -992,15 +994,23 @@ async function startServer() {
       }
       lessonCache.set(cacheKey, lesson);
       writeLessonToDisk(cacheKey, lesson);
-      res.json(lesson);
+      if (heartbeat) clearInterval(heartbeat);
+      res.end(JSON.stringify(lesson));
     } catch (err) {
+      if (heartbeat) clearInterval(heartbeat);
       const status = getHttpStatusForError(err);
       if (status === 429 || status === 503) {
         console.warn("Lesson quota/availability notice:", formatErrorMessage(err));
       } else {
         console.error("Error in /api/tutor/lesson:", err);
       }
-      res.status(status).json({ error: formatErrorMessage(err) });
+      if (res.headersSent) {
+        if (!res.writableEnded) {
+          res.end(JSON.stringify({ error: formatErrorMessage(err) }));
+        }
+      } else {
+        res.status(status).json({ error: formatErrorMessage(err) });
+      }
     }
   });
 

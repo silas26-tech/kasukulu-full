@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { readJsonLoose } from "../utils/readJson";
 import {
   AlertCircle,
   ArrowRight,
@@ -248,8 +249,8 @@ export function LessonPanel({
           customTopic: customTopic.trim(),
         }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
+      const data = await readJsonLoose(res);
+      if (!res.ok || data?.error || !Array.isArray(data?.mcq)) {
         throw new Error(
           data?.error || "The lesson could not be prepared. Please try again."
         );
@@ -312,8 +313,8 @@ export function LessonPanel({
           })),
         }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
+      const data = await readJsonLoose(res);
+      if (!res.ok || data?.error || !Array.isArray(data?.results)) {
         throw new Error(data?.error || "Marking failed. Please try again.");
       }
       setWrittenResults(data.results as WrittenResult[]);

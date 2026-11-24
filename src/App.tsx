@@ -49,6 +49,7 @@ import { ProfileModal } from "./components/ProfileModal";
 import { WelcomeOnboarding } from "./components/WelcomeOnboarding";
 import { LegalModal, type LegalTab } from "./components/LegalModal";
 import { getDeviceId } from "./utils/deviceId";
+import { readJson } from "./utils/readJson";
 import { HomeHub, type HomeDestination } from "./components/HomeHub";
 import { PastPapersPanel } from "./components/PastPapersPanel";
 import { SubjectsPanel } from "./components/SubjectsPanel";
@@ -500,7 +501,7 @@ export default function App() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text, tutorId: activeTutor.id }),
         });
-        const data = await res.json();
+        const data = await readJson(res);
         if (!res.ok) {
           throw new Error(data.error || "Unable to synthesize speech.");
         }
@@ -1103,7 +1104,7 @@ export default function App() {
             customTopic: customToUse,
           }),
         });
-        const data = await res.json();
+        const data = await readJson(res);
         if (!res.ok) throw new Error(data.error || "Failed to load blackboard.");
 
         setBlackboard({
@@ -1269,7 +1270,7 @@ export default function App() {
           message: clean,
         }),
       });
-      const data = await res.json();
+      const data = await readJson(res);
       if (!res.ok) throw new Error(data.error || "Tutor could not respond.");
 
       const replyId = `${Date.now()}-tutor`;
@@ -1374,7 +1375,7 @@ export default function App() {
           padImageBase64: imageBase64,
         }),
       });
-      const data = await res.json();
+      const data = await readJson(res);
       if (!res.ok) throw new Error(data.error || "Tutor could not read pad.");
 
       const replyId = `${Date.now()}-tutor`;
@@ -1472,7 +1473,7 @@ export default function App() {
         }),
       });
 
-      const data = await res.json();
+      const data = await readJson(res);
       if (!res.ok) throw new Error(data.error || "Tutor could not inspect snap.");
 
       const replyId = `${Date.now()}-tutor`;
@@ -1564,7 +1565,7 @@ export default function App() {
               mimeType: blob.type || "audio/webm",
             }),
           });
-          const trData = await trRes.json();
+          const trData = await readJson(trRes);
           if (!trRes.ok) {
             throw new Error(trData.error || "Transcription failed.");
           }
@@ -1603,7 +1604,7 @@ export default function App() {
           customTopic,
         }),
       });
-      const data = await res.json();
+      const data = await readJson(res);
       if (!res.ok) throw new Error(data.error || "Failed to generate quiz.");
       setQuizQuestions(data.questions ?? []);
     } catch (err) {
