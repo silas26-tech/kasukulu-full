@@ -869,7 +869,17 @@ async function startServer() {
       let raw: any = null;
       let lastParseError: unknown = null;
       for (let attempt = 1; attempt <= 3 && raw === null; attempt++) {
-        const response = await generateContentWithFallback(ai, lessonPayload);
+        // Third try uses the lighter backup model in case the main one keeps failing.
+        const response =
+          attempt < 3
+            ? await generateContentWithFallback(ai, lessonPayload)
+            : await generateContentWithFallback(
+                ai,
+                lessonPayload,
+                "gemini-3.1-flash-lite",
+                ""
+              );
+        const finish = (response as any)?.candidates?.[0]?.finishReason;
         try {
           const parsed = parseModelJson(response.text);
           if (
@@ -882,10 +892,16 @@ async function startServer() {
             raw = parsed;
           } else {
             lastParseError = new Error("The AI lesson was incomplete.");
+            console.warn(
+              `Lesson reply incomplete (attempt ${attempt}). finishReason=${finish}, keys=${Object.keys(parsed ?? {}).join(",")}`
+            );
           }
         } catch (parseErr) {
           lastParseError = parseErr;
-          console.warn(`Lesson reply unreadable (attempt ${attempt}):`, parseErr);
+          console.warn(
+            `Lesson reply unreadable (attempt ${attempt}). finishReason=${finish}, length=${String(response.text ?? "").length}, start=${JSON.stringify(String(response.text ?? "").slice(0, 160))}, end=${JSON.stringify(String(response.text ?? "").slice(-160))}`,
+            parseErr
+          );
         }
       }
       if (raw === null) {
