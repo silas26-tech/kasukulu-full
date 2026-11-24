@@ -19,6 +19,7 @@ import {
   TUTORS,
   ECZ_TOPICS,
   ZAMBIAN_SUBJECTS_BY_GRADE,
+  WRITING_RULES,
   buildTutorSystemInstruction,
   type LearnerProfile,
 } from "./src/data/curriculum.ts";
@@ -27,6 +28,7 @@ import {
   type QuestionMarkResult,
   type NationwideCompetition,
 } from "./src/data/competitions.ts";
+import { speakableMath, tidyDeep, tidyMath } from "./src/utils/mathText.ts";
 // Server-only: holds correct answers + marking schemes. Never import from client code.
 import { NATIONWIDE_COMPETITIONS } from "./src/data/competitions.server.ts";
 
@@ -546,10 +548,10 @@ function cleanExamQuestions(raw: unknown, max: number): ExamQuestion[] {
   for (const item of list) {
     if (!item || typeof item !== "object") continue;
     const options = Array.isArray(item.options)
-      ? item.options.map((o: unknown) => cleanLine(o, 200)).filter(Boolean)
+      ? item.options.map((o: unknown) => tidyMath(cleanLine(o, 200))).filter(Boolean)
       : [];
     const correctIndex = Number(item.correctIndex);
-    const question = cleanLine(item.question, 600);
+    const question = tidyMath(cleanLine(item.question, 600));
     if (!question || options.length !== 4) continue;
     if (!Number.isInteger(correctIndex) || correctIndex < 0 || correctIndex > 3) continue;
     if (new Set(options).size !== 4) continue;
@@ -557,8 +559,8 @@ function cleanExamQuestions(raw: unknown, max: number): ExamQuestion[] {
       question,
       options,
       correctIndex,
-      explanation: cleanLine(item.explanation, 500),
-      topic: cleanLine(item.topic, 100),
+      explanation: tidyMath(cleanLine(item.explanation, 500)),
+      topic: tidyMath(cleanLine(item.topic, 100)),
     });
     if (out.length >= max) break;
   }
@@ -739,7 +741,7 @@ async function startServer() {
         },
       });
 
-      const parsed = JSON.parse((response.text ?? "{}").trim());
+      const parsed = tidyDeep(JSON.parse((response.text ?? "{}").trim()));
       res.json(parsed);
     } catch (err) {
       const status = getHttpStatusForError(err);
@@ -815,7 +817,7 @@ async function startServer() {
         },
       });
 
-      const parsed = JSON.parse((response.text ?? "{}").trim());
+      const parsed = tidyDeep(JSON.parse((response.text ?? "{}").trim()));
       if (blackboardCache.size >= 150) {
         const oldestKey = blackboardCache.keys().next().value;
         if (oldestKey) blackboardCache.delete(oldestKey);
@@ -853,7 +855,7 @@ async function startServer() {
       const safeCustom = cleanLine(customTopic, 200);
       // The tutor is decided by the topic, so ready-made topics share one lesson per grade.
       const cacheKey = [
-        "v4",
+        "v5",
         topicId ? "" : tutorId,
         profile?.grade ?? "",
         profile?.languageAid ?? "",
@@ -891,11 +893,12 @@ async function startServer() {
 
       const lessonPayload: GenerateContentPayload = {
         contents: [
-          `Write a complete lesson on "${focusTitle}" for a ${profile.grade} Zambian learner (${profile.pace} pace) following the ECZ syllabus. It should take a learner about 15 to 20 minutes to read and work through, and by the end they should truly understand the topic without any other help.`,
-          "TEACHING STYLE: very simple, friendly, clear language like a patient teacher. Short sentences. Define every hard word the first time it appears. Build from what the learner already knows, then go deeper, one idea at a time.",
-          "STRUCTURE: an introduction (3 to 5 sentences saying what the topic is and why it matters in real life). Then 6 to 7 sections. Each section has a heading, an explanation of 150 to 220 words (use blank lines between short paragraphs), a fully worked example of 60 to 100 words showing every step and the reasoning, and one keyPoint sentence to remember. Cover the whole topic the way ECZ examines it, including common mistakes learners make. At least half of the examples must use everyday Zambian life (kwacha, nshima, maize, minibuses, markets, football, villages and towns).",
-          "Finish with 5 to 6 summary points.",
-          "EXERCISE (it tests only what the lesson taught, and covers every section): 6 multiple-choice questions (exactly 4 plain-text options, no A-D prefixes, a 0-based correctIndex, and a short kind explanation) and 3 written questions. Written questions are not trivial recall: ask the learner to explain, work out, or apply an idea, using their own words. Give each written question a maxMarks of 2, 3 or 4, a list of 2 to 5 markingPoints (the specific ideas or steps that earn marks) and a short modelAnswer.",
+          `Write a short, focused lesson on ONE single topic: "${focusTitle}" for a ${profile.grade} Zambian learner (${profile.pace} pace) following the ECZ syllabus. It should take a learner about 10 to 12 minutes to read and work through. Teach ONLY this one topic. Do NOT wander into other topics, other chapters or the wider syllabus. If the topic title is very broad, choose its single most important idea and teach only that. If you need an idea from another topic, mention it in one short sentence and move on.`,
+          "TEACHING STYLE: very simple English that a Grade 7 learner can follow, like a patient teacher talking to one learner. Short sentences. Everyday words. Define every hard word the first time it appears. Build from what the learner already knows, then go a little deeper, one small idea at a time.",
+          "STRUCTURE: an introduction (2 to 4 short sentences saying what the topic is and why it matters in real life). Then exactly 5 sections. Each section covers one small idea of this topic only and has a heading, an explanation of 100 to 160 words (use blank lines between short paragraphs), a fully worked example of 50 to 80 words showing every step and the reasoning, and one keyPoint sentence to remember. Include the common mistakes learners make. At least half of the examples must use everyday Zambian life (kwacha, nshima, maize, minibuses, markets, football, villages and towns).",
+          "Finish with 4 to 5 summary points.",
+          "EXERCISE (it tests only what the lesson taught): 5 multiple-choice questions (exactly 4 plain-text options, no A-D prefixes, a 0-based correctIndex, and a short kind explanation) and 2 written questions. Written questions ask the learner to explain, work out, or apply an idea in their own words. Give each written question a maxMarks of 2, 3 or 4, a list of 2 to 4 markingPoints (the specific ideas or steps that earn marks) and a short modelAnswer.",
+          WRITING_RULES,
         ].join("\n"),
         config: {
           systemInstruction: baseInstruction,
@@ -1041,10 +1044,14 @@ async function startServer() {
         .filter((q: { question: string }) => q.question)
         .slice(0, 5);
 
-      if (sections.length < 4 || mcq.length < 4 || written.length < 2) {
-        res.status(502).json({
-          error: "The lesson came back incomplete. Please tap Start lesson again.",
-        });
+      if (sections.length < 3 || mcq.length < 3 || written.length < 1) {
+        if (heartbeat) clearInterval(heartbeat);
+        refundAllowance(req);
+        res.end(
+          JSON.stringify({
+            error: "The lesson came back incomplete. Please tap Start lesson again.",
+          })
+        );
         return;
       }
 
@@ -1054,7 +1061,7 @@ async function startServer() {
         0
       );
 
-      const lesson = {
+      const lesson = tidyDeep({
         title: str(raw.title, 160) || focusTitle,
         objective: str(raw.objective, 400),
         introduction: str(raw.introduction, 1200),
@@ -1067,7 +1074,7 @@ async function startServer() {
           .slice(0, 8),
         mcq,
         written,
-      };
+      });
 
       if (lessonCache.size >= 300) {
         const oldestKey = lessonCache.keys().next().value;
@@ -1210,7 +1217,7 @@ async function startServer() {
         }
       }
 
-      res.json({ results });
+      res.json({ results: tidyDeep(results) });
     } catch (err) {
       const status = getHttpStatusForError(err);
       if (status === 429 || status === 503) {
@@ -1268,7 +1275,7 @@ async function startServer() {
       });
 
       const parsed = JSON.parse((response.text ?? "[]").trim());
-      res.json({ questions: parsed });
+      res.json({ questions: tidyDeep(parsed) });
     } catch (err) {
       const status = getHttpStatusForError(err);
       if (status === 429 || status === 503) {
@@ -1328,7 +1335,7 @@ async function startServer() {
             contents: [
               `Write mock exam paper number ${v + 1} for ${isALevel ? "Zambian A-Level (AS and A2)" : `ECZ ${grade}`} ${cleanSubject}.`,
               `It has exactly ${MOCK_QUESTION_COUNT} multiple-choice questions that fairly cover the whole syllabus${topicTitles.length ? `, spread across these topics: ${topicTitles.join("; ")}` : ""}.`,
-              "Difficulty mix: 5 easy, 6 medium, 4 hard, in the style of real ECZ papers. Use everyday Zambian contexts where natural (kwacha, markets, farms, football).",
+              WRITING_RULES + " Difficulty mix: 5 easy, 6 medium, 4 hard, in the style of real ECZ papers. Use everyday Zambian contexts where natural (kwacha, markets, farms, football).",
               "Each question must be fully answerable from the text alone (no diagrams or tables you cannot show), have exactly 4 different plain-text options with no A-D prefixes, a 0-based correctIndex, ONE clearly correct answer, a one or two sentence explanation, and a topic naming the syllabus topic it tests.",
               `Make this paper different from other papers of the same subject by choosing different questions, numbers and examples (paper ${v + 1} of 3).`,
             ].join("\n"),
@@ -1396,7 +1403,7 @@ async function startServer() {
           contents: [
             `A ${grade === "A-Level" ? "Zambian A-Level" : `ECZ ${grade}`} learner keeps getting these questions wrong:`,
             ...weak.map((w, i) => `${i + 1}. [${w.title}] ${w.prompt}`),
-            `Write exactly ${PRACTICE_QUESTION_COUNT} NEW multiple-choice practice questions that rebuild understanding of these topics, starting easier and getting a little harder. Do not repeat the questions above.`,
+            WRITING_RULES + ` Write exactly ${PRACTICE_QUESTION_COUNT} NEW multiple-choice practice questions that rebuild understanding of these topics, starting easier and getting a little harder. Do not repeat the questions above.`,
             "Each question needs exactly 4 different plain-text options with no A-D prefixes, a 0-based correctIndex, ONE clearly correct answer, a kind explanation of the idea in one or two sentences, and a topic.",
           ].join("\n"),
           config: {
@@ -1447,10 +1454,12 @@ async function startServer() {
       }
 
       const tutor = getTutorById(tutorId);
-      const cleanSpeechText = text
-        .replace(/[*_`#]/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
+      const cleanSpeechText = speakableMath(
+        text
+          .replace(/[*_`#]/g, "")
+          .replace(/\s+/g, " ")
+          .trim()
+      );
       const speechKey = crypto
         .createHash("sha1")
         .update(`${tutor.voiceName}|${cleanSpeechText}`)
@@ -2029,7 +2038,12 @@ async function startServer() {
 
     const sendToClient = (payload: Record<string, unknown>) => {
       if (clientWs.readyState === WebSocket.OPEN) {
-        clientWs.send(JSON.stringify(payload));
+        // Tidy maths (÷, raised powers) in what the tutor writes on the board or says.
+        const tidy =
+          payload.type === "blackboard" || payload.type === "outputTranscript"
+            ? tidyDeep(payload)
+            : payload;
+        clientWs.send(JSON.stringify(tidy));
       }
     };
 
