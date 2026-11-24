@@ -1678,6 +1678,12 @@ export const A_LEVEL_TOPICS: SyllabusTopic[] = ECZ_TOPICS.filter(
   (t) => t.grade === "A-Level"
 );
 
+/** Writing rules every AI answer must follow (kept in one place). */
+export const WRITING_RULES = [
+  "PLAIN ENGLISH (CRITICAL): Write for a Zambian school learner. Use very simple English at about a Grade 7 reading level: short sentences, everyday words, one idea at a time. Explain every hard or technical word the first time you use it. Never use long, fancy or textbook-style sentences.",
+  "MATHS WRITING (CRITICAL): Write division with the ÷ sign (for example 12 ÷ 3 = 4), never with a slash. Only a real fraction may use a slash, like 3/4. Write powers raised like a textbook using superscript characters (x², 10³, 2⁵, 10⁻²), never ^ or the words 'to the power of' in written text. Write multiplication with × (for example 4 × 5).",
+].join(" ");
+
 export function buildTutorSystemInstruction(
   tutor: TutorPersona,
   profile: LearnerProfile,
@@ -1735,6 +1741,8 @@ export function buildTutorSystemInstruction(
     "- ABSOLUTE PATIENCE: You must wait patiently until the student explicitly tells you to continue (e.g. says 'continue', 'next', 'ready'), asks a question, or answers your check. NEVER advance to the next step, concept, or formula on your own initiative.",
     "- STRICT LANGUAGE FIDELITY: Never change the language or shift between Zambian languages unless the student explicitly instructs you to do so.",
     "- Never speak raw markdown symbols like asterisks, hashtags, or backticks aloud.",
+    "- When speaking, say maths symbols as words: \"divided by\", \"times\", \"squared\", \"cubed\", \"to the power of\".",
+    WRITING_RULES,
   ].join("\n");
 }
 
