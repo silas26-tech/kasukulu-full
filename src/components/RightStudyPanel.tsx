@@ -7,6 +7,7 @@ import {
   CalendarCheck2,
   CheckCircle2,
   CheckSquare,
+  ClipboardCheck,
   Compass,
   FileText,
   GraduationCap,
@@ -41,6 +42,7 @@ import { WrittenAnswerPad } from "./WrittenAnswerPad";
 import { MonthlyTestsPanel } from "./MonthlyTestsPanel";
 import { StudyFlashcards } from "./StudyFlashcards";
 import { LessonPanel } from "./LessonPanel";
+import { ExamPanel } from "./ExamPanel";
 import { StudyWeaknessesPanel } from "./StudyWeaknessesPanel";
 
 export type StudyTab =
@@ -53,6 +55,7 @@ export type StudyTab =
   | "progress"
   | "monthly"
   | "flashcards"
+  | "exams"
   | "weaknesses";
 
 interface RightStudyPanelProps {
@@ -241,6 +244,7 @@ export function RightStudyPanel({
               { id: "progress", label: "Progress", icon: BarChart3 },
               { id: "monthly", label: "Monthly", icon: CalendarCheck2 },
               { id: "flashcards", label: "Flashcards", icon: Zap },
+              { id: "exams", label: "Exams", icon: ClipboardCheck },
               { id: "weaknesses", label: "My Weaknesses", icon: AlertCircle },
             ] as const
           ).map((tab) => {
@@ -579,6 +583,15 @@ export function RightStudyPanel({
               )}
             </div>
           </div>
+        )}
+
+        {activeTab === "exams" && (
+          <ExamPanel
+            profile={profile}
+            weaknesses={progress.weaknesses ?? []}
+            onRecordQuizAnswer={onRecordQuizAnswer}
+            onAskTutorText={onAskTutorText}
+          />
         )}
 
         {activeTab === "lesson" && (

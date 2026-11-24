@@ -18,6 +18,7 @@ import {
 import {
   TUTORS,
   ECZ_TOPICS,
+  ZAMBIAN_SUBJECTS_BY_GRADE,
   buildTutorSystemInstruction,
   type LearnerProfile,
 } from "./src/data/curriculum.ts";
@@ -522,6 +523,86 @@ function refundAllowance(req: express.Request): void {
 // Recent voice readbacks, so the same sentence is not synthesised twice.
 const speechCache = new Map<string, { audioBase64: string; mimeType: string }>();
 const SPEECH_CACHE_MAX = 40;
+
+// ---------------------------------------------------------------------------
+// Mock exams and weak-spot practice: multiple-choice sets that are checked
+// carefully before they reach a learner.
+// ---------------------------------------------------------------------------
+interface ExamQuestion {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+  topic: string;
+}
+
+function cleanExamQuestions(raw: unknown, max: number): ExamQuestion[] {
+  const list = Array.isArray(raw)
+    ? raw
+    : raw && typeof raw === "object" && Array.isArray((raw as any).questions)
+    ? (raw as any).questions
+    : [];
+  const out: ExamQuestion[] = [];
+  for (const item of list) {
+    if (!item || typeof item !== "object") continue;
+    const options = Array.isArray(item.options)
+      ? item.options.map((o: unknown) => cleanLine(o, 200)).filter(Boolean)
+      : [];
+    const correctIndex = Number(item.correctIndex);
+    const question = cleanLine(item.question, 600);
+    if (!question || options.length !== 4) continue;
+    if (!Number.isInteger(correctIndex) || correctIndex < 0 || correctIndex > 3) continue;
+    if (new Set(options).size !== 4) continue;
+    out.push({
+      question,
+      options,
+      correctIndex,
+      explanation: cleanLine(item.explanation, 500),
+      topic: cleanLine(item.topic, 100),
+    });
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
+const examQuestionSchema = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      question: { type: Type.STRING },
+      options: { type: Type.ARRAY, items: { type: Type.STRING } },
+      correctIndex: { type: Type.INTEGER },
+      explanation: { type: Type.STRING },
+      topic: { type: Type.STRING },
+    },
+    required: ["question", "options", "correctIndex", "explanation", "topic"],
+  },
+};
+
+const MOCK_QUESTION_COUNT = 15;
+const MOCK_MINUTES = 20;
+const PRACTICE_QUESTION_COUNT = 8;
+const mockCache = new Map<string, ExamQuestion[]>();
+
+function readExamFromDisk(key: string): ExamQuestion[] | null {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(lessonDiskPath(key), "utf8"));
+    const clean = cleanExamQuestions(parsed, MOCK_QUESTION_COUNT);
+    return clean.length >= 10 ? clean : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeExamToDisk(key: string, questions: ExamQuestion[]): void {
+  try {
+    fs.mkdirSync(LESSON_CACHE_DIR, { recursive: true });
+    fs.writeFileSync(lessonDiskPath(key), JSON.stringify(questions));
+  } catch (err) {
+    console.warn("Could not save exam to disk cache:", err);
+  }
+}
 
 const blackboardCache = new Map<string, Record<string, unknown>>();
 const lessonCache = new Map<string, Record<string, unknown>>();
@@ -1195,6 +1276,156 @@ async function startServer() {
       } else {
         console.error("Error in /api/tutor/quiz:", err);
       }
+      res.status(status).json({ error: formatErrorMessage(err) });
+    }
+  });
+
+  // A timed mock paper: 15 multiple-choice questions across a whole subject.
+  // Each paper is written once and then shared, so repeats cost nothing.
+  app.post("/api/tutor/mock", async (req, res) => {
+    try {
+      const { profile, subject, variant } = (req.body ?? {}) as {
+        profile?: LearnerProfile;
+        subject?: string;
+        variant?: number;
+      };
+      const grade = profile?.grade;
+      const allowed = grade ? ZAMBIAN_SUBJECTS_BY_GRADE[grade] ?? [] : [];
+      const cleanSubject = cleanLine(subject, 100);
+      if (!grade || !allowed.includes(cleanSubject)) {
+        refundAllowance(req);
+        res.status(400).json({ error: "Please choose a subject for your grade." });
+        return;
+      }
+      const v = Math.max(0, Math.min(2, Math.floor(Number(variant) || 0)));
+      const cacheKey = ["mock-v1", grade, cleanSubject, String(v)].join("|");
+      const payload = (questions: ExamQuestion[]) => ({
+        questions,
+        subject: cleanSubject,
+        durationMinutes: MOCK_MINUTES,
+      });
+
+      const cached = mockCache.get(cacheKey) ?? readExamFromDisk(cacheKey);
+      if (cached) {
+        mockCache.set(cacheKey, cached);
+        refundAllowance(req);
+        res.json(payload(cached));
+        return;
+      }
+
+      const ai = getAiClient();
+      const topicTitles = ECZ_TOPICS.filter(
+        (t) => t.grade === grade && t.subject === cleanSubject
+      )
+        .map((t) => t.title)
+        .slice(0, 30);
+      const isALevel = grade === "A-Level";
+      let questions: ExamQuestion[] = [];
+      for (let attempt = 1; attempt <= 3 && questions.length < 12; attempt++) {
+        const response = await generateContentWithFallback(
+          ai,
+          {
+            contents: [
+              `Write mock exam paper number ${v + 1} for ${isALevel ? "Zambian A-Level (AS and A2)" : `ECZ ${grade}`} ${cleanSubject}.`,
+              `It has exactly ${MOCK_QUESTION_COUNT} multiple-choice questions that fairly cover the whole syllabus${topicTitles.length ? `, spread across these topics: ${topicTitles.join("; ")}` : ""}.`,
+              "Difficulty mix: 5 easy, 6 medium, 4 hard, in the style of real ECZ papers. Use everyday Zambian contexts where natural (kwacha, markets, farms, football).",
+              "Each question must be fully answerable from the text alone (no diagrams or tables you cannot show), have exactly 4 different plain-text options with no A-D prefixes, a 0-based correctIndex, ONE clearly correct answer, a one or two sentence explanation, and a topic naming the syllabus topic it tests.",
+              `Make this paper different from other papers of the same subject by choosing different questions, numbers and examples (paper ${v + 1} of 3).`,
+            ].join("\n"),
+            config: {
+              responseMimeType: "application/json",
+              responseSchema: examQuestionSchema,
+            },
+          },
+          attempt < 3 ? undefined : "gemini-3.1-flash-lite",
+          attempt < 3 ? undefined : ""
+        );
+        try {
+          questions = cleanExamQuestions(parseModelJson(response.text), MOCK_QUESTION_COUNT);
+        } catch (parseErr) {
+          console.warn(`Mock paper unreadable (attempt ${attempt}):`, parseErr);
+        }
+      }
+      if (questions.length < 12) {
+        refundAllowance(req);
+        res.status(503).json({
+          error: "The exam paper could not be prepared. Please tap Try again in a moment.",
+        });
+        return;
+      }
+      if (mockCache.size >= 200) {
+        const oldest = mockCache.keys().next().value;
+        if (oldest) mockCache.delete(oldest);
+      }
+      mockCache.set(cacheKey, questions);
+      writeExamToDisk(cacheKey, questions);
+      res.json(payload(questions));
+    } catch (err) {
+      const status = getHttpStatusForError(err);
+      if (status === 429 || status === 503) {
+        console.warn("Mock exam quota/availability notice:", formatErrorMessage(err));
+      } else {
+        console.error("Error in /api/tutor/mock:", err);
+      }
+      refundAllowance(req);
+      res.status(status).json({ error: formatErrorMessage(err) });
+    }
+  });
+
+  // Fresh practice questions aimed at the topics a learner keeps getting wrong.
+  app.post("/api/tutor/practice", async (req, res) => {
+    try {
+      const { profile, items } = (req.body ?? {}) as {
+        profile?: LearnerProfile;
+        items?: { title?: string; prompt?: string }[];
+      };
+      const grade = profile?.grade;
+      const weak = (Array.isArray(items) ? items : [])
+        .slice(0, 8)
+        .map((i) => ({ title: cleanLine(i?.title, 100), prompt: cleanLine(i?.prompt, 240) }))
+        .filter((i) => i.title || i.prompt);
+      if (!grade || weak.length === 0) {
+        refundAllowance(req);
+        res.status(400).json({ error: "There are no weak spots to practise yet." });
+        return;
+      }
+      const ai = getAiClient();
+      let questions: ExamQuestion[] = [];
+      for (let attempt = 1; attempt <= 2 && questions.length < 5; attempt++) {
+        const response = await generateContentWithFallback(ai, {
+          contents: [
+            `A ${grade === "A-Level" ? "Zambian A-Level" : `ECZ ${grade}`} learner keeps getting these questions wrong:`,
+            ...weak.map((w, i) => `${i + 1}. [${w.title}] ${w.prompt}`),
+            `Write exactly ${PRACTICE_QUESTION_COUNT} NEW multiple-choice practice questions that rebuild understanding of these topics, starting easier and getting a little harder. Do not repeat the questions above.`,
+            "Each question needs exactly 4 different plain-text options with no A-D prefixes, a 0-based correctIndex, ONE clearly correct answer, a kind explanation of the idea in one or two sentences, and a topic.",
+          ].join("\n"),
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: examQuestionSchema,
+          },
+        });
+        try {
+          questions = cleanExamQuestions(parseModelJson(response.text), PRACTICE_QUESTION_COUNT);
+        } catch (parseErr) {
+          console.warn(`Practice set unreadable (attempt ${attempt}):`, parseErr);
+        }
+      }
+      if (questions.length < 5) {
+        refundAllowance(req);
+        res.status(503).json({
+          error: "The practice set could not be prepared. Please tap Try again in a moment.",
+        });
+        return;
+      }
+      res.json({ questions });
+    } catch (err) {
+      const status = getHttpStatusForError(err);
+      if (status === 429 || status === 503) {
+        console.warn("Practice quota/availability notice:", formatErrorMessage(err));
+      } else {
+        console.error("Error in /api/tutor/practice:", err);
+      }
+      refundAllowance(req);
       res.status(status).json({ error: formatErrorMessage(err) });
     }
   });

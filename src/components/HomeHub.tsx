@@ -348,6 +348,27 @@ export function HomeHub({
       {/* Level, points and badges */}
       <LevelAndBadgesCard progress={progress} studyStreak={studyStreak} />
 
+      {/* Exams and weak-spot practice */}
+      <section
+        aria-label="Exams and practice"
+        className="rounded-2xl border border-slate-200 bg-white p-5 flex flex-wrap items-center justify-between gap-3 shadow-2xs"
+      >
+        <div>
+          <h2 className="text-sm font-bold text-slate-900">Test yourself</h2>
+          <p className="text-xs text-slate-600 mt-0.5">
+            Sit a 20-minute mock exam, or practise the questions you keep missing.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => onOpenDestination({ tab: "exams" })}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer min-h-[44px]"
+        >
+          <span>Open Exams</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      </section>
+
       {/* Streak Milestones & Rewards */}
       <section aria-label="Streak Milestones" className="space-y-3">
         <div className="flex items-baseline justify-between gap-2">
