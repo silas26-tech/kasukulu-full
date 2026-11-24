@@ -48,6 +48,7 @@ import { VoiceWaveform } from "./components/VoiceWaveform";
 import { ProfileModal } from "./components/ProfileModal";
 import { WelcomeOnboarding } from "./components/WelcomeOnboarding";
 import { LegalModal, type LegalTab } from "./components/LegalModal";
+import { RefreshButton } from "./components/RefreshButton";
 import { getDeviceId } from "./utils/deviceId";
 import { readJson } from "./utils/readJson";
 import { HomeHub, type HomeDestination } from "./components/HomeHub";
@@ -1955,6 +1956,9 @@ export default function App() {
 
           {/* Zone 3: Primary Actions */}
           <div className="flex items-center gap-2 shrink-0">
+            <RefreshButton
+              callActive={callStatus === "connected" || callStatus === "connecting"}
+            />
             <button
               type="button"
               onClick={() => setProfileOpen(true)}
