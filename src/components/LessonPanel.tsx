@@ -47,6 +47,8 @@ interface Lesson {
   estimatedMinutes: number;
   sections: LessonSection[];
   summary: string[];
+  mustKnow?: string[];
+  examTip?: string;
   mcq: QuizQuestion[];
   written: WrittenQuestion[];
 }
@@ -535,6 +537,29 @@ export function LessonPanel({
           )}
         </div>
 
+        {!finished && sectionIndex === 0 && (lesson.mustKnow?.length ?? 0) > 0 && (
+          <div className="rounded-2xl border-2 border-amber-300 bg-amber-50/70 p-5 space-y-2.5">
+            <div className="flex items-center gap-2 text-sm font-bold text-amber-950">
+              <Lightbulb className="w-4 h-4 text-amber-700" />
+              What ECZ expects you to know
+            </div>
+            <ul className="space-y-1.5">
+              {lesson.mustKnow!.map((k, i) => (
+                <li key={i} className="text-sm text-slate-800 leading-relaxed flex gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                  <span>{k}</span>
+                </li>
+              ))}
+            </ul>
+            {lesson.examTip && (
+              <p className="text-xs text-amber-950 leading-relaxed pt-1">
+                <strong className="font-semibold">Exam tip: </strong>
+                {lesson.examTip}
+              </p>
+            )}
+          </div>
+        )}
+
         {!finished && (
           <div
             role="progressbar"
@@ -703,6 +728,29 @@ export function LessonPanel({
 
         {finished && (
           <>
+
+        {(lesson.mustKnow?.length ?? 0) > 0 && (
+          <div className="rounded-2xl border-2 border-amber-300 bg-amber-50/70 p-5 space-y-2.5">
+            <div className="flex items-center gap-2 text-sm font-bold text-amber-950">
+              <Lightbulb className="w-4 h-4 text-amber-700" />
+              What ECZ expects you to know
+            </div>
+            <ul className="space-y-1.5">
+              {lesson.mustKnow!.map((k, i) => (
+                <li key={i} className="text-sm text-slate-800 leading-relaxed flex gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                  <span>{k}</span>
+                </li>
+              ))}
+            </ul>
+            {lesson.examTip && (
+              <p className="text-xs text-amber-950 leading-relaxed pt-1">
+                <strong className="font-semibold">Exam tip: </strong>
+                {lesson.examTip}
+              </p>
+            )}
+          </div>
+        )}
 
         {lesson.summary.length > 0 && (
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 space-y-2.5">

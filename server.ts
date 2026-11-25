@@ -199,6 +199,10 @@ type GenerateContentPayload = Omit<
   "model"
 >;
 
+// Quick replies (tutor chat, marking) use a lighter model with "thinking" switched off, so they
+// answer in a few seconds. Set FAST_MODEL on Render to change it (default: the lite model).
+const FAST_MODEL = process.env.FAST_MODEL || "gemini-3.1-flash-lite";
+
 async function generateContentWithFallback(
   ai: GoogleGenAI,
   payload: GenerateContentPayload,
@@ -233,6 +237,34 @@ async function generateContentWithFallback(
       return fallbackResult;
     }
     throw primaryErr;
+  }
+}
+
+/** Fast path: lighter model, no thinking, capped length. Falls back to the normal model if rejected. */
+async function generateFast(
+  ai: GoogleGenAI,
+  payload: GenerateContentPayload,
+  maxOutputTokens: number
+) {
+  const fastPayload: GenerateContentPayload = {
+    ...payload,
+    config: {
+      ...(payload.config ?? {}),
+      maxOutputTokens,
+      thinkingConfig: { thinkingBudget: 0 },
+    },
+  };
+  try {
+    const result = await withRetry(
+      () => ai.models.generateContent({ ...fastPayload, model: FAST_MODEL }),
+      2
+    );
+    recordGeminiResponse(result);
+    return result;
+  } catch (err) {
+    if (isDailyQuotaError(err)) throw err;
+    console.warn("Fast model failed, using the normal model:", formatErrorMessage(err));
+    return generateContentWithFallback(ai, payload);
   }
 }
 
@@ -745,7 +777,7 @@ async function startServer() {
           }
         : prompt;
 
-      const response = await generateContentWithFallback(ai, {
+      const response = await generateFast(ai, {
         contents: contentsPayload,
         config: {
           systemInstruction: baseInstruction,
@@ -771,7 +803,7 @@ async function startServer() {
             ],
           },
         },
-      });
+      }, 900);
 
       const parsed = tidyDeep(JSON.parse((response.text ?? "{}").trim()));
       res.json(parsed);
@@ -887,7 +919,7 @@ async function startServer() {
       const safeCustom = cleanLine(customTopic, 200);
       // The tutor is decided by the topic, so ready-made topics share one lesson per grade.
       const cacheKey = [
-        "v6",
+        "v7",
         topicId ? "" : tutorId,
         profile?.grade ?? "",
         profile?.languageAid ?? "",
@@ -929,6 +961,7 @@ async function startServer() {
           "TEACHING STYLE: very simple English that a Grade 7 learner can follow, like a patient teacher talking to one learner. Short sentences. Everyday words. Define every hard word the first time it appears. Build from what the learner already knows, then go a little deeper, one small idea at a time.",
           "STRUCTURE: an introduction (2 to 4 short sentences saying what the topic is and why it matters in real life). Then exactly 5 sections. Each section covers one small idea of this topic only and has a heading, an explanation of 100 to 160 words (use blank lines between short paragraphs), a fully worked example of 50 to 80 words showing every step and the reasoning, one keyPoint sentence to remember, a checkQuestion (one short question that tests only this section) and a checkAnswer (the answer in one short sentence). Include the common mistakes learners make. At least half of the examples must use everyday Zambian life (kwacha, nshima, maize, minibuses, markets, football, villages and towns).",
           "Finish with 4 to 5 summary points.",
+          `ECZ KEY THINGS: also give "mustKnow": 5 to 7 short items that a ${profile.grade} learner MUST know on this topic to score well in the ECZ exam (key definitions, formulas, rules, facts, and skills the ECZ syllabus and past papers ask for). Each item is one short sentence in simple English. Also give "examTip": one sentence on how ECZ usually asks about this topic and how to earn full marks (for example, show every step, include units, write the formula first).${topic?.keyTerms?.length ? ` Syllabus key terms for this topic: ${topic.keyTerms.join(", ")}.` : ""}`,
           "EXERCISE (it tests only what the lesson taught): 5 multiple-choice questions (exactly 4 plain-text options, no A-D prefixes, a 0-based correctIndex, and a short kind explanation) and 2 written questions. Written questions ask the learner to explain, work out, or apply an idea in their own words. Give each written question a maxMarks of 2, 3 or 4, a list of 2 to 4 markingPoints (the specific ideas or steps that earn marks) and a short modelAnswer.",
           WRITING_RULES,
         ].join("\n"),
@@ -957,6 +990,8 @@ async function startServer() {
                 },
               },
               summary: { type: Type.ARRAY, items: { type: Type.STRING } },
+              mustKnow: { type: Type.ARRAY, items: { type: Type.STRING } },
+              examTip: { type: Type.STRING },
               mcq: {
                 type: Type.ARRAY,
                 items: {
@@ -1108,6 +1143,11 @@ async function startServer() {
           .map((k: unknown) => str(k, 300))
           .filter(Boolean)
           .slice(0, 8),
+        mustKnow: (Array.isArray(raw.mustKnow) ? raw.mustKnow : [])
+          .map((k: unknown) => str(k, 250))
+          .filter(Boolean)
+          .slice(0, 8),
+        examTip: str(raw.examTip, 300),
         mcq,
         written,
       });
@@ -1193,9 +1233,10 @@ async function startServer() {
         const profile = body.profile as LearnerProfile;
         const ai = getAiClient();
         const tutor = getTutorById(String(body.tutorId ?? ""));
-        const baseInstruction = buildTutorSystemInstruction(tutor, profile, null);
+        // A short instruction keeps marking quick (the full tutor prompt is long).
+        const baseInstruction = `You are ${tutor.name}, a kind but fair ECZ examiner marking a ${profile?.grade ?? "secondary"} learner's work. Write feedback in very simple English that a Zambian learner can understand. Write maths with plain symbols (÷, ×, x² ) and no markdown.`;
 
-        const response = await generateContentWithFallback(ai, {
+        const response = await generateFast(ai, {
           contents: [
             `Mark these written answers from a ${profile?.grade ?? "secondary"} learner the way a kind but fair ECZ examiner would. Each item has its own maxMarks.`,
             "Award a mark for each markingPoint the learner covers, even if the wording is simple or different. Accept correct ideas that are not listed. Never award more than maxMarks.",
@@ -1231,7 +1272,7 @@ async function startServer() {
               },
             },
           },
-        });
+      }, 1500);
 
         const parsed = JSON.parse((response.text ?? "[]").trim());
         const byId = new Map<string, Record<string, unknown>>(
