@@ -50,7 +50,14 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
       "Your learner profile: first name, school (optional), grade, province, language preference and learning pace.",
       "Your progress: topics studied, quiz results, daily activity, streaks, points and badges.",
       "Your study tools: flashcards, mistake bank, study calendar, lesson notes, saved lessons and settings.",
+      "If you add your parent's WhatsApp number to share your weekly report, it is kept only on this device.",
       "A random anonymous ID for this device. It contains no personal details and is sent with AI requests so each learner gets a fair daily allowance.",
+    ],
+  },
+  {
+    heading: "Sharing with friends and parents",
+    paragraphs: [
+      "You choose what to share. A friend challenge link contains five quiz questions, your first name and your score. A weekly report message contains your first name, grade and study numbers. These are sent through WhatsApp or wherever you choose to paste them, so please only send them to people you trust. We do not see them.",
     ],
   },
   {
