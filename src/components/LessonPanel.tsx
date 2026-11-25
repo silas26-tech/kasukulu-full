@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { readJsonLoose } from "../utils/readJson";
+import { OfflineLessonsCard } from "./OfflineLessonsCard";
 import {
   AlertCircle,
   ArrowRight,
@@ -90,7 +91,7 @@ interface LessonPanelProps {
 // ---------- On-device storage (so lessons work offline and can be resumed) ----------
 const STORE_PREFIX = "kasukulu_lesson_v2:";
 const STORE_INDEX = "kasukulu_lesson_index_v2";
-const MAX_SAVED_LESSONS = 15;
+const MAX_SAVED_LESSONS = 40;
 
 function isValidLesson(v: unknown): v is Lesson {
   const l = v as Lesson;
@@ -250,6 +251,20 @@ export function LessonPanel({
     setError(null);
     setNotice(null);
     clearAnswers();
+    // No internet: open the copy saved on this phone straight away instead of waiting for a failure.
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      const offlineNow = readSaved(storageKey);
+      if (offlineNow) {
+        openSaved(offlineNow, false);
+        setNotice("You are offline, so this is the lesson saved on your phone.");
+        return;
+      }
+      setError(
+        "You are offline and this lesson is not saved on your phone. Connect to the internet, or pick a topic you downloaded."
+      );
+      setPhase("idle");
+      return;
+    }
     try {
       const res = await fetch("/api/tutor/lesson", {
         method: "POST",
@@ -464,6 +479,11 @@ export function LessonPanel({
             </p>
           )}
         </div>
+        <OfflineLessonsCard
+          tutor={tutor}
+          profile={profile}
+          onChanged={() => setSaved(readSaved(storageKey))}
+        />
       </div>
     );
   }

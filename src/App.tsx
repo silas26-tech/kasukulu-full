@@ -57,6 +57,7 @@ import {
 import { getDeviceId } from "./utils/deviceId";
 import { readJson } from "./utils/readJson";
 import { HomeHub, type HomeDestination } from "./components/HomeHub";
+import { useDailyReminder } from "./components/ReminderCard";
 import { PastPapersPanel } from "./components/PastPapersPanel";
 import { SubjectsPanel } from "./components/SubjectsPanel";
 import { CompetitionDashboard } from "./components/CompetitionDashboard";
@@ -209,6 +210,7 @@ export default function App() {
   const [isReturningLearner, setIsReturningLearner] = useState<boolean>(hasOnboarded);
   const [profile, setProfile] = useState<LearnerProfile>(loadProfile);
   const [progress, setProgress] = useState<StudyProgress>(loadProgress);
+  useDailyReminder(progress);
   const [profileOpen, setProfileOpen] = useState(false);
 
   const [appView, setAppView] = useState<

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ParentReportCard } from "./ParentReportCard";
+import { ReminderCard } from "./ReminderCard";
 import {
   ArrowRight,
   BarChart3,
@@ -350,6 +351,8 @@ export function HomeHub({
       <LevelAndBadgesCard progress={progress} studyStreak={studyStreak} />
 
       <ParentReportCard profile={profile} progress={progress} />
+
+      <ReminderCard />
 
       {/* Exams and weak-spot practice */}
       <section
