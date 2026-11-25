@@ -24,12 +24,83 @@ export interface EczPastPaper {
   totalMarks: number;
   tutorId: string;
   sourceLabel: string;
-  verified: true;
+  /** true only for a real copy of an exam paper. Practice papers written by Kasukulu are false. */
+  verified: boolean;
   pdfUrl?: string;
   questions: PastPaperQuestion[];
 }
 
 export const ECZ_PAST_PAPERS: EczPastPaper[] = [
+  // =========================================================================
+  // REAL PAST PAPERS (copies with questions and worked solutions, kept in order and in pairs)
+  // Source: ZEDPastPapers compilations of the ECZ papers. The worked solutions are NOT an
+  // official ECZ marking scheme. Tutor/teacher should check them.
+  // =========================================================================
+  {
+    id: "real-g12-math-2020-p1-gce",
+    year: 2020,
+    grade: "Grade 12",
+    subject: "Mathematics",
+    paperCode: "4024/1",
+    paperNumber: "Paper 1",
+    title: "2020 GCE Mathematics Paper 1",
+    durationMinutes: 0,
+    totalMarks: 0,
+    tutorId: "chanda",
+    sourceLabel: "Copy of the 2020 GCE paper with worked solutions (via ZEDPastPapers). Solutions are not the official ECZ marking scheme.",
+    verified: true,
+    pdfUrl: "/papers/ecz-g12-math-2020-p1-gce.pdf",
+    questions: [],
+  },
+  {
+    id: "real-g12-math-2020-p2",
+    year: 2020,
+    grade: "Grade 12",
+    subject: "Mathematics",
+    paperCode: "4024/2",
+    paperNumber: "Paper 2",
+    title: "2020 Mathematics Paper 2",
+    durationMinutes: 0,
+    totalMarks: 0,
+    tutorId: "chanda",
+    sourceLabel: "Copy of the 2020 paper with worked solutions (via ZEDPastPapers). Solutions are not the official ECZ marking scheme.",
+    verified: true,
+    pdfUrl: "/papers/ecz-g12-math-2020-p2.pdf",
+    questions: [],
+  },
+  {
+    id: "real-g12-math-2021-p2-internal",
+    year: 2021,
+    grade: "Grade 12",
+    subject: "Mathematics",
+    paperCode: "4024/2",
+    paperNumber: "Paper 2",
+    title: "2021 Internal Mathematics Paper 2",
+    durationMinutes: 0,
+    totalMarks: 0,
+    tutorId: "chanda",
+    sourceLabel: "Copy of the 2021 internal paper with worked solutions (via ZEDPastPapers). Solutions are not the official ECZ marking scheme.",
+    verified: true,
+    pdfUrl: "/papers/ecz-g12-math-2021-p2-internal.pdf",
+    questions: [],
+  },
+  {
+    id: "real-g12-math-2021-p2-gce",
+    year: 2021,
+    grade: "Grade 12",
+    subject: "Mathematics",
+    paperCode: "4024/2",
+    paperNumber: "Paper 2",
+    title: "2021 GCE Mathematics Paper 2",
+    durationMinutes: 0,
+    totalMarks: 0,
+    tutorId: "chanda",
+    sourceLabel: "Copy of the 2021 GCE paper with worked solutions (via ZEDPastPapers). Solutions are not the official ECZ marking scheme.",
+    verified: true,
+    pdfUrl: "/papers/ecz-g12-math-2021-p2-gce.pdf",
+    questions: [],
+  },
+
   // =========================================================================
   // GRADE 12 (SCHOOL CERTIFICATE — ECZ VERIFIED ARCHIVE)
   // =========================================================================
@@ -40,13 +111,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "Mathematics",
     paperCode: "4024/1",
     paperNumber: "Paper 1",
-    title: "ECZ Mathematics Paper 1 (No Calculator)",
+    title: "Practice: Mathematics Paper 1 (No Calculator)",
     durationMinutes: 120,
     totalMarks: 80,
     tutorId: "chanda",
-    sourceLabel: "ECZ Verified Past Paper Record · 4024/1 (2023)",
-    verified: true,
-    pdfUrl: "/papers/ecz-g12-math-2023-p1.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",
@@ -101,13 +171,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "Mathematics",
     paperCode: "4024/2",
     paperNumber: "Paper 2",
-    title: "ECZ Mathematics Paper 2 (Quadratics & Earth Geometry)",
+    title: "Practice: Mathematics Paper 2 (Quadratics & Earth Geometry)",
     durationMinutes: 150,
     totalMarks: 100,
     tutorId: "chanda",
-    sourceLabel: "ECZ Verified Past Paper Record · 4024/2 (2022)",
-    verified: true,
-    pdfUrl: "/papers/ecz-g12-math-2022-p2.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",
@@ -145,13 +214,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "Mathematics",
     paperCode: "4024/1",
     paperNumber: "Paper 1",
-    title: "ECZ Mathematics Paper 1 (Matrices, Sets & Bearings)",
+    title: "Practice: Mathematics Paper 1 (Matrices, Sets & Bearings)",
     durationMinutes: 120,
     totalMarks: 80,
     tutorId: "chanda",
-    sourceLabel: "ECZ Verified Past Paper Record · 4024/1 (2021)",
-    verified: true,
-    pdfUrl: "/papers/ecz-g12-math-2021-p1.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",
@@ -185,12 +253,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "Mathematics",
     paperCode: "4024/2",
     paperNumber: "Paper 2",
-    title: "ECZ Mathematics Paper 2 (2016 Specimen — Questions & Marking Scheme)",
+    title: "Practice: Mathematics Paper 2 (2016 Specimen — Questions & Marking Scheme)",
     durationMinutes: 150,
     totalMarks: 100,
     tutorId: "chanda",
-    sourceLabel: "ECZ 2016 Specimen Paper & Marking Scheme · 4024/2",
-    verified: true,
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     pdfUrl:
       "/assets/aistudio/Grade_12_Mathematics_Paper_2_2016_Specimen_-_Marking_Scheme_b3c9d16d.pdf",
     questions: [
@@ -394,13 +462,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "Science (Physics & Chemistry)",
     paperCode: "5124/1",
     paperNumber: "Paper 1",
-    title: "ECZ Science Paper 1 (Multiple Choice)",
+    title: "Practice: Science Paper 1 (Multiple Choice)",
     durationMinutes: 60,
     totalMarks: 40,
     tutorId: "phiri",
-    sourceLabel: "ECZ Verified Past Paper Record · 5124/1 (2023)",
-    verified: true,
-    pdfUrl: "/papers/ecz-g12-sci-2023-p1.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",
@@ -450,13 +517,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "Science (Physics & Chemistry)",
     paperCode: "5124/2",
     paperNumber: "Paper 2",
-    title: "ECZ Science Paper 2 (Electricity, Motion & Stoichiometry)",
+    title: "Practice: Science Paper 2 (Electricity, Motion & Stoichiometry)",
     durationMinutes: 120,
     totalMarks: 85,
     tutorId: "phiri",
-    sourceLabel: "ECZ Verified Past Paper Record · 5124/2 (2022)",
-    verified: true,
-    pdfUrl: "/papers/ecz-g12-sci-2022-p2.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",
@@ -493,13 +559,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "Biology",
     paperCode: "5090/2",
     paperNumber: "Paper 2",
-    title: "ECZ Biology Paper 2 (Genetics & Gaseous Exchange)",
+    title: "Practice: Biology Paper 2 (Genetics & Gaseous Exchange)",
     durationMinutes: 105,
     totalMarks: 80,
     tutorId: "mwansa",
-    sourceLabel: "ECZ Verified Past Paper Record · 5090/2 (2022)",
-    verified: true,
-    pdfUrl: "/papers/ecz-g12-bio-2022-p2.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",
@@ -536,13 +601,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "Civic Education",
     paperCode: "2030/2",
     paperNumber: "Paper 2",
-    title: "ECZ Civic Education Paper 2 (Governance & Human Rights)",
+    title: "Practice: Civic Education Paper 2 (Governance & Human Rights)",
     durationMinutes: 120,
     totalMarks: 100,
     tutorId: "banda",
-    sourceLabel: "ECZ Verified Past Paper Record · 2030/2 (2023)",
-    verified: true,
-    pdfUrl: "/papers/ecz-g12-civic-2023-p2.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",
@@ -576,13 +640,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "English Language",
     paperCode: "1121/2",
     paperNumber: "Paper 2",
-    title: "ECZ English Language Paper 2 (Structure & Transformations)",
+    title: "Practice: English Language Paper 2 (Structure & Transformations)",
     durationMinutes: 120,
     totalMarks: 60,
     tutorId: "banda",
-    sourceLabel: "ECZ Verified Past Paper Record · 1121/2 (2023)",
-    verified: true,
-    pdfUrl: "/papers/ecz-g12-eng-2023-p2.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",
@@ -619,13 +682,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "Mathematics",
     paperCode: "401/1",
     paperNumber: "Paper 1",
-    title: "ECZ Grade 9 Mathematics Paper 1",
+    title: "Practice: Grade 9 Mathematics Paper 1",
     durationMinutes: 120,
     totalMarks: 50,
     tutorId: "chanda",
-    sourceLabel: "ECZ Verified Past Paper Record · 401/1 (2023)",
-    verified: true,
-    pdfUrl: "/papers/ecz-g9-math-2023-p1.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",
@@ -660,13 +722,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "Mathematics",
     paperCode: "401/2",
     paperNumber: "Paper 2",
-    title: "ECZ Grade 9 Mathematics Paper 2 (Mensuration & Sets)",
+    title: "Practice: Grade 9 Mathematics Paper 2 (Mensuration & Sets)",
     durationMinutes: 120,
     totalMarks: 50,
     tutorId: "chanda",
-    sourceLabel: "ECZ Verified Past Paper Record · 401/2 (2022)",
-    verified: true,
-    pdfUrl: "/papers/ecz-g9-math-2022-p2.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",
@@ -702,13 +763,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "Integrated Science",
     paperCode: "502/1",
     paperNumber: "Paper 1",
-    title: "ECZ Grade 9 Integrated Science Paper 1",
+    title: "Practice: Grade 9 Integrated Science Paper 1",
     durationMinutes: 90,
     totalMarks: 60,
     tutorId: "mwansa",
-    sourceLabel: "ECZ Verified Past Paper Record · 502/1 (2022)",
-    verified: true,
-    pdfUrl: "/papers/ecz-g9-sci-2022-p1.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",
@@ -748,13 +808,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "Social Studies",
     paperCode: "207/1",
     paperNumber: "Paper 1",
-    title: "ECZ Grade 9 Social Studies Paper 1 (Governance & Geography)",
+    title: "Practice: Grade 9 Social Studies Paper 1 (Governance & Geography)",
     durationMinutes: 90,
     totalMarks: 60,
     tutorId: "banda",
-    sourceLabel: "ECZ Verified Past Paper Record · 207/1 (2023)",
-    verified: true,
-    pdfUrl: "/papers/ecz-g9-soc-2023-p1.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",
@@ -798,13 +857,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "Mathematics",
     paperCode: "701",
     paperNumber: "Composite",
-    title: "ECZ Grade 7 Composite Mathematics",
+    title: "Practice: Grade 7 Composite Mathematics",
     durationMinutes: 90,
     totalMarks: 60,
     tutorId: "chanda",
-    sourceLabel: "ECZ Verified Past Paper Record · 701 (2023)",
-    verified: true,
-    pdfUrl: "/papers/ecz-g7-math-2023.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",
@@ -854,13 +912,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "Mathematics",
     paperCode: "701",
     paperNumber: "Composite",
-    title: "ECZ Grade 7 Composite Mathematics",
+    title: "Practice: Grade 7 Composite Mathematics",
     durationMinutes: 90,
     totalMarks: 60,
     tutorId: "chanda",
-    sourceLabel: "ECZ Verified Past Paper Record · 701 (2022)",
-    verified: true,
-    pdfUrl: "/papers/ecz-g7-math-2022.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",
@@ -900,13 +957,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "English Language",
     paperCode: "702",
     paperNumber: "Composite",
-    title: "ECZ Grade 7 English Language (Grammar & Structure)",
+    title: "Practice: Grade 7 English Language (Grammar & Structure)",
     durationMinutes: 90,
     totalMarks: 60,
     tutorId: "banda",
-    sourceLabel: "ECZ Verified Past Paper Record · 702 (2023)",
-    verified: true,
-    pdfUrl: "/papers/ecz-g7-eng-2023.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",
@@ -946,13 +1002,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "Integrated Science",
     paperCode: "704",
     paperNumber: "Composite",
-    title: "ECZ Grade 7 Integrated Science (Plants, Health & Circuits)",
+    title: "Practice: Grade 7 Integrated Science (Plants, Health & Circuits)",
     durationMinutes: 90,
     totalMarks: 60,
     tutorId: "mwansa",
-    sourceLabel: "ECZ Verified Past Paper Record · 704 (2023)",
-    verified: true,
-    pdfUrl: "/papers/ecz-g7-sci-2023.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",
@@ -996,13 +1051,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "Pure Mathematics",
     paperCode: "9709/32",
     paperNumber: "Paper 2",
-    title: "A-Level Pure Mathematics 3 (Calculus & 3D Vectors)",
+    title: "Practice: A-Level Pure Mathematics 3 (Calculus & 3D Vectors)",
     durationMinutes: 110,
     totalMarks: 75,
     tutorId: "kaluba",
-    sourceLabel: "Verified A-Level Archive · 9709/32 (2024)",
-    verified: true,
-    pdfUrl: "/papers/alevel-math-9709-p3.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",
@@ -1054,13 +1108,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "Chemistry",
     paperCode: "9701/42",
     paperNumber: "Paper 2",
-    title: "A-Level Chemistry Paper 4 (Mechanisms & Thermodynamics)",
+    title: "Practice: A-Level Chemistry Paper 4 (Mechanisms & Thermodynamics)",
     durationMinutes: 120,
     totalMarks: 100,
     tutorId: "tembo",
-    sourceLabel: "Verified A-Level Archive · 9701/42 (2024)",
-    verified: true,
-    pdfUrl: "/papers/alevel-chem-9701-p4.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",
@@ -1096,13 +1149,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "Physics",
     paperCode: "9702/42",
     paperNumber: "Paper 2",
-    title: "A-Level Physics Paper 4 (Fields, Capacitance & Quantum)",
+    title: "Practice: A-Level Physics Paper 4 (Fields, Capacitance & Quantum)",
     durationMinutes: 120,
     totalMarks: 100,
     tutorId: "sibanda",
-    sourceLabel: "Verified A-Level Archive · 9702/42 (2024)",
-    verified: true,
-    pdfUrl: "/papers/alevel-phys-9702-p4.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",
@@ -1138,13 +1190,12 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     subject: "Biology",
     paperCode: "9700/42",
     paperNumber: "Paper 2",
-    title: "A-Level Biology Paper 4 (Respiration & Gene Technology)",
+    title: "Practice: A-Level Biology Paper 4 (Respiration & Gene Technology)",
     durationMinutes: 120,
     totalMarks: 100,
     tutorId: "kangwa",
-    sourceLabel: "Verified A-Level Archive · 9700/42 (2024)",
-    verified: true,
-    pdfUrl: "/papers/alevel-bio-9700-p4.pdf",
+    sourceLabel: "Kasukulu practice paper in ECZ style. Not an official ECZ paper.",
+    verified: false,
     questions: [
       {
         number: "Q1",

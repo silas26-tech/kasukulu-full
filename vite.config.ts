@@ -67,8 +67,11 @@ export default defineConfig(() => {
                 rangeRequests: true,
                 cacheableResponse: { statuses: [200] },
                 expiration: {
-                  maxEntries: 200,
-                  maxAgeSeconds: 60 * 60 * 24 * 180,
+                  // Keep at most 40 papers on a phone (about 60 to 100 MB). The oldest are removed first,
+                  // and everything is cleared automatically if the phone runs low on storage.
+                  maxEntries: 40,
+                  maxAgeSeconds: 60 * 60 * 24 * 90,
+                  purgeOnQuotaError: true,
                 },
               },
             },

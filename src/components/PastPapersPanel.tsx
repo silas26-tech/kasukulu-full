@@ -158,7 +158,10 @@ export function PastPapersPanel({
     new Set(allPapers.map((paper) => paper.year))
   ).sort((a, b) => b - a);
 
-  const filteredPapers = allPapers.filter((paper) => {
+  // Newest year first; inside a year, Paper 1 comes before Paper 2, real papers before practice ones.
+  const paperRank = (n: string) => (n === "Paper 1" ? 1 : n === "Paper 2" ? 2 : 3);
+  const filteredPapers = allPapers
+    .filter((paper) => {
     if (
       wingMode === "school" &&
       gradeFilter !== "All" &&
@@ -170,7 +173,15 @@ export function PastPapersPanel({
     if (yearFilter !== "All" && paper.year !== yearFilter) return false;
     if (paperFilter !== "All" && paper.paperNumber !== paperFilter) return false;
     return true;
-  });
+  })
+    .slice()
+    .sort(
+      (a, b) =>
+        b.year - a.year ||
+        Number(b.verified) - Number(a.verified) ||
+        paperRank(a.paperNumber) - paperRank(b.paperNumber) ||
+        a.title.localeCompare(b.title)
+    );
 
   const activePaper: EczPastPaper | null =
     allPapers.find((p) => p.id === selectedPaperId) ?? null;
@@ -264,7 +275,7 @@ export function PastPapersPanel({
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
                 <span className="inline-flex items-center gap-1 font-medium text-emerald-700">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  Verified Record
+                  {activePaper.verified ? "Real past paper" : "Practice paper"}
                 </span>
                 <span aria-hidden="true">·</span>
                 <span className="font-mono tabular-nums">
@@ -276,16 +287,20 @@ export function PastPapersPanel({
                 <span>{activePaper.paperNumber}</span>
                 <span aria-hidden="true">·</span>
                 <span className="font-mono">{activePaper.paperCode}</span>
-                <span aria-hidden="true">·</span>
-                <span className="font-mono tabular-nums">
-                  {activePaper.totalMarks} marks
-                </span>
+                {activePaper.totalMarks > 0 && (
+                  <span aria-hidden="true">·</span>
+                )}
+                {activePaper.totalMarks > 0 && (
+                  <span className="font-mono tabular-nums">
+                    {activePaper.totalMarks} marks
+                  </span>
+                )}
               </div>
               <h2 className="mt-1 text-lg font-semibold text-slate-900">
                 {activePaper.title}
               </h2>
               <p className="mt-0.5 text-xs text-slate-500">
-                {activePaper.sourceLabel} · {activePaper.durationMinutes} min
+                {activePaper.sourceLabel}{activePaper.durationMinutes > 0 ? ` · ${activePaper.durationMinutes} min` : ""}
               </p>
             </div>
 
@@ -349,7 +364,7 @@ export function PastPapersPanel({
                 {activePaper.paperCode} ({activePaper.year}) — Original Past Paper PDF
               </span>
               <span className="font-mono text-[11px] text-slate-300">
-                {activePaper.durationMinutes} min · {activePaper.totalMarks} marks
+                {activePaper.durationMinutes > 0 ? `${activePaper.durationMinutes} min · ` : ""}{activePaper.totalMarks > 0 ? `${activePaper.totalMarks} marks` : ""}
               </span>
             </div>
             <iframe
@@ -370,6 +385,13 @@ export function PastPapersPanel({
               .
             </div>
           </div>
+        )}
+
+        {activePaper.questions.length === 0 && (
+          <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700 leading-relaxed">
+            Read the questions and worked solutions in the paper above. Try each question on your
+            work pad first, then check the solution. Ask your tutor about any step you do not understand.
+          </p>
         )}
 
         <div className="space-y-4">
@@ -545,14 +567,14 @@ export function PastPapersPanel({
           <p className="mt-1 text-xs text-slate-600">
             {wingMode === "alevel"
               ? "Official AS & A2 past paper PDFs and marking guides. Select any paper to view the original document and check marking schemes."
-              : "Official Grade 7, Grade 9 & Grade 12 ECZ past papers and marking schemes. Select any paper to view the original PDF and check marking guides."}
+              : "Real past papers and Kasukulu practice papers in ECZ style. Real papers are marked as such. Select a paper to open it."}
           </p>
         </div>
 
         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 shrink-0">
           <ShieldCheck className="w-4 h-4" />
           {filteredPapers.length}{" "}
-          {filteredPapers.length === 1 ? "verified paper" : "verified papers"}
+          {filteredPapers.length === 1 ? "paper" : "papers"}
         </span>
       </div>
 
@@ -666,12 +688,10 @@ export function PastPapersPanel({
         <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/60 p-8 text-center space-y-2.5">
           <FileText className="w-6 h-6 text-slate-400 mx-auto" />
           <h3 className="text-sm font-semibold text-slate-900">
-            Verified paper coming soon
+            No paper here yet
           </h3>
           <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
-            No verified ECZ past paper record matches this exact Grade, Subject,
-            Year, and Paper combination yet. Only real verified past papers are
-            listed here.
+            No paper matches this exact Grade, Subject, Year and Paper yet.
           </p>
           <button
             type="button"
@@ -719,11 +739,10 @@ export function PastPapersPanel({
                   {paper.title}
                 </div>
                 <div className="mt-1 text-xs text-slate-500 tabular-nums">
-                  {paper.questions.length} verified questions
+                  {paper.verified ? "Real past paper" : `${paper.questions.length} practice questions`}
                   <span aria-hidden="true"> · </span>
-                  {paper.durationMinutes} min paper
-                  <span aria-hidden="true"> · </span>
-                  {paper.totalMarks} marks total
+                  {paper.durationMinutes > 0 ? `${paper.durationMinutes} min paper` : "Open the PDF"}
+                  {paper.totalMarks > 0 ? ` · ${paper.totalMarks} marks total` : ""}
                 </div>
               </div>
               <FileText className="w-4 h-4 text-slate-400 shrink-0 mt-1" />
