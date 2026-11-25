@@ -49,6 +49,11 @@ import { ProfileModal } from "./components/ProfileModal";
 import { WelcomeOnboarding } from "./components/WelcomeOnboarding";
 import { LegalModal, type LegalTab } from "./components/LegalModal";
 import { RefreshButton } from "./components/RefreshButton";
+import {
+  clearChallengeFromUrl,
+  readChallengeFromUrl,
+  type Challenge,
+} from "./utils/challenge";
 import { getDeviceId } from "./utils/deviceId";
 import { readJson } from "./utils/readJson";
 import { HomeHub, type HomeDestination } from "./components/HomeHub";
@@ -219,6 +224,14 @@ export default function App() {
 
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [legalTab, setLegalTab] = useState<LegalTab | null>(null);
+  // A friend's challenge opened from a WhatsApp link (?c=...).
+  const [incomingChallenge, setIncomingChallenge] = useState<Challenge | null>(() =>
+    readChallengeFromUrl()
+  );
+  const challengeOpenedRef = useRef(false);
+  useEffect(() => {
+    clearChallengeFromUrl();
+  }, []);
   const [isAdmin, setIsAdmin] = useState<boolean>(() => checkAdminSession());
 
   useEffect(() => {
@@ -1068,6 +1081,18 @@ export default function App() {
     },
     [appView, callStatus, profile.grade, selectedTutorId, stopLiveCall, stopTtsPlayback]
   );
+
+  // Take the learner straight to the challenge once they have finished sign-up.
+  useEffect(() => {
+    if (!incomingChallenge || !hasOnboarded || challengeOpenedRef.current) return;
+    challengeOpenedRef.current = true;
+    if (profile.grade === "A-Level") {
+      // Challenges are not available in the A-Level wing yet.
+      setIncomingChallenge(null);
+      return;
+    }
+    navigateAppView("studio", "exams");
+  }, [incomingChallenge, hasOnboarded, profile.grade, navigateAppView]);
 
   const handleRefreshBlackboard = useCallback(
     async (
@@ -2705,6 +2730,8 @@ export default function App() {
           {/* Full-Width Study Workspace: Board & Work Pad Side-by-Side */}
           <div id="study-panel" ref={studyPanelRef}>
             <RightStudyPanel
+              incomingChallenge={incomingChallenge}
+              onChallengeHandled={() => setIncomingChallenge(null)}
               activeTab={rightTab}
               onTabChange={setRightTab}
               wingMode="school"

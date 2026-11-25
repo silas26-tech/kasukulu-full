@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { UsageCostCard } from "./UsageCostCard";
 import type { User } from "firebase/auth";
 import {
   Activity,
@@ -46,7 +47,7 @@ interface AdminDashboardProps {
   onAdminSignOut: () => void;
 }
 
-type AdminTab = "overview" | "learners" | "tutors" | "competitions" | "curriculum" | "security";
+type AdminTab = "overview" | "learners" | "tutors" | "competitions" | "curriculum" | "usage" | "security";
 
 export function AdminDashboard({
   profile,
@@ -296,6 +297,7 @@ export function AdminDashboard({
             { id: "tutors", label: "AI Tutors & Voices", icon: Volume2 },
             { id: "competitions", label: "Competition Entries", icon: Award },
             { id: "curriculum", label: "Curriculum & Topics", icon: BookOpen },
+            { id: "usage", label: "Usage & Cost", icon: Activity },
             { id: "security", label: "Security & Firebase", icon: Database },
           ] as const
         ).map((tab) => {
@@ -735,6 +737,8 @@ export function AdminDashboard({
       )}
 
       {/* TAB 6: SECURITY & FIREBASE */}
+      {adminTab === "usage" && <UsageCostCard />}
+
       {adminTab === "security" && (
         <div className="rounded-2xl border border-slate-200 bg-white p-6 space-y-5">
           <div>

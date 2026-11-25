@@ -3,8 +3,11 @@ import {
   AlertCircle,
   CheckCircle2,
   ClipboardCheck,
+  Copy,
   Loader2,
   RotateCcw,
+  Share2,
+  Swords,
   Target,
   Timer,
   Trophy,
@@ -17,6 +20,14 @@ import {
   type WeaknessItem,
 } from "../data/curriculum";
 import { readJson } from "../utils/readJson";
+import {
+  buildChallengeUrl,
+  copyText,
+  firstName,
+  pickQuestions,
+  whatsappShareUrl,
+  type Challenge,
+} from "../utils/challenge";
 
 interface ExamQuestion extends QuizQuestion {
   topic: string;
@@ -27,9 +38,18 @@ interface ExamPanelProps {
   weaknesses: WeaknessItem[];
   onRecordQuizAnswer: (isCorrect: boolean, question?: QuizQuestion) => void;
   onAskTutorText: (prompt: string) => void;
+  /** A challenge opened from a friend's WhatsApp link. */
+  incomingChallenge?: Challenge | null;
+  onChallengeHandled?: () => void;
 }
 
-type Mode = "mock" | "weak";
+type Mode = "mock" | "weak" | "challenge-send" | "challenge-play";
+
+interface ChallengeMeta {
+  from: string;
+  score: number;
+  total: number;
+}
 type Phase = "menu" | "loading" | "exam" | "results" | "error";
 
 const RUN_KEY = "kasukulu_exam_run_v1";
@@ -41,6 +61,7 @@ interface SavedRun {
   questions: ExamQuestion[];
   answers: Record<number, number>;
   endsAt: number | null; // epoch ms; null for untimed practice
+  challenge?: ChallengeMeta | null;
 }
 
 interface HistoryItem {
@@ -48,6 +69,7 @@ interface HistoryItem {
   subject: string;
   mode: Mode;
   percentage: number;
+  at?: number;
 }
 
 function loadRun(): SavedRun | null {
@@ -122,6 +144,8 @@ export function ExamPanel({
   weaknesses,
   onRecordQuizAnswer,
   onAskTutorText,
+  incomingChallenge = null,
+  onChallengeHandled,
 }: ExamPanelProps) {
   const subjects = ZAMBIAN_SUBJECTS_BY_GRADE[profile.grade] ?? [];
   const [subject, setSubject] = useState<string>(subjects[0] ?? "");
@@ -135,6 +159,9 @@ export function ExamPanel({
   const [history, setHistory] = useState<HistoryItem[]>(() => loadHistory());
   const [resumable, setResumable] = useState<SavedRun | null>(() => loadRun());
   const [timedOut, setTimedOut] = useState(false);
+  const [runLabel, setRunLabel] = useState<string>("");
+  const [activeChallenge, setActiveChallenge] = useState<ChallengeMeta | null>(null);
+  const [copied, setCopied] = useState(false);
   const submittedRef = useRef(false);
   const nextVariantRef = useRef(Math.floor(Math.random() * 3));
 
@@ -147,8 +174,8 @@ export function ExamPanel({
   // Keep the saved run up to date so a refresh does not lose the exam.
   useEffect(() => {
     if (phase !== "exam") return;
-    saveRun({ mode, subject, questions, answers, endsAt });
-  }, [phase, mode, subject, questions, answers, endsAt]);
+    saveRun({ mode, subject: runLabel, questions, answers, endsAt, challenge: activeChallenge });
+  }, [phase, mode, runLabel, questions, answers, endsAt, activeChallenge]);
 
   const submit = (auto = false) => {
     if (submittedRef.current) return;
@@ -164,9 +191,15 @@ export function ExamPanel({
     setHistory(
       pushHistory({
         date: new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-        subject: mode === "weak" ? "Weak spots" : subject,
+        subject:
+          mode === "weak"
+            ? "Weak spots"
+            : mode === "mock"
+            ? runLabel
+            : `Challenge: ${runLabel}`,
         mode,
         percentage: pct,
+        at: Date.now(),
       })
     );
     saveRun(null);
@@ -192,11 +225,15 @@ export function ExamPanel({
     nextMode: Mode,
     qs: ExamQuestion[],
     minutes: number | null,
-    forSubject: string
+    forSubject: string,
+    challenge: ChallengeMeta | null = null
   ) => {
     submittedRef.current = false;
     setMode(nextMode);
-    if (nextMode === "mock") setSubject(forSubject);
+    setRunLabel(nextMode === "weak" ? "Practice" : forSubject);
+    setActiveChallenge(challenge);
+    setCopied(false);
+    if (nextMode === "mock" || nextMode === "challenge-send") setSubject(forSubject);
     setQuestions(qs);
     setAnswers({});
     setTimedOut(false);
@@ -236,6 +273,48 @@ export function ExamPanel({
     }
   };
 
+  // Make a 5-question challenge from a shared mock paper (costs nothing extra).
+  const startChallengeSend = async () => {
+    if (!subject) return;
+    setPhase("loading");
+    setError(null);
+    try {
+      const res = await fetch("/api/tutor/mock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile, subject, variant: Math.floor(Math.random() * 3) }),
+      });
+      const data = await readJson(res);
+      if (!res.ok || data?.error || !Array.isArray(data?.questions)) {
+        throw new Error(data?.error || "The challenge could not be prepared.");
+      }
+      const five = pickQuestions(data.questions as ExamQuestion[], 5).map(shuffleQuestion);
+      begin("challenge-send", five, null, subject);
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Could not reach Kasukulu. Check your connection and try again."
+      );
+      setPhase("error");
+    }
+  };
+
+  const acceptChallenge = () => {
+    if (!incomingChallenge) return;
+    const qs: ExamQuestion[] = incomingChallenge.questions.map((q) => ({
+      ...q,
+      explanation: "",
+      topic: incomingChallenge.subject,
+    }));
+    begin("challenge-play", qs, null, incomingChallenge.subject, {
+      from: incomingChallenge.from,
+      score: incomingChallenge.score,
+      total: incomingChallenge.total,
+    });
+    onChallengeHandled?.();
+  };
+
   const startWeak = async () => {
     if (weaknesses.length === 0) return;
     setPhase("loading");
@@ -268,7 +347,9 @@ export function ExamPanel({
     if (!resumable) return;
     submittedRef.current = false;
     setMode(resumable.mode);
-    if (resumable.mode === "mock") setSubject(resumable.subject);
+    setRunLabel(resumable.subject);
+    setActiveChallenge(resumable.challenge ?? null);
+    if (resumable.mode === "mock" || resumable.mode === "challenge-send") setSubject(resumable.subject);
     setQuestions(resumable.questions);
     setAnswers(resumable.answers ?? {});
     setEndsAt(resumable.endsAt);
@@ -315,11 +396,42 @@ export function ExamPanel({
           </div>
         )}
 
+        {incomingChallenge && (
+          <section className="rounded-2xl border-2 border-emerald-500 bg-emerald-50 p-5 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center shrink-0">
+                <Swords className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-emerald-950">
+                  {incomingChallenge.from} challenged you!
+                </h3>
+                <p className="text-xs text-emerald-900 mt-0.5">
+                  {incomingChallenge.subject}: {incomingChallenge.total} questions. Can you beat{" "}
+                  {incomingChallenge.from}&apos;s score of {incomingChallenge.score}/{incomingChallenge.total}?
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={acceptChallenge}
+              className="px-5 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold cursor-pointer min-h-[48px]"
+            >
+              Accept the challenge
+            </button>
+          </section>
+        )}
+
         {resumable && (
           <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 flex flex-wrap items-center justify-between gap-3">
             <div className="text-xs text-amber-900">
-              You have an unfinished {resumable.mode === "weak" ? "practice set" : "mock exam"}
-              {resumable.mode === "mock" ? ` in ${resumable.subject}` : ""}.
+              You have an unfinished{" "}
+              {resumable.mode === "weak"
+                ? "practice set"
+                : resumable.mode === "mock"
+                ? "mock exam"
+                : "challenge"}
+              {resumable.mode !== "weak" ? ` in ${resumable.subject}` : ""}.
             </div>
             <div className="flex gap-2">
               <button type="button" onClick={resume} className="px-4 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold cursor-pointer min-h-[40px]">
@@ -403,6 +515,30 @@ export function ExamPanel({
           </button>
         </section>
 
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center shrink-0">
+              <Swords className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Challenge a friend</h3>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Answer 5 questions in {subject || "a subject"}, then send your score to a friend on
+                WhatsApp. Can they beat you?
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => void startChallengeSend()}
+            disabled={!subject}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-sky-700 hover:bg-sky-800 disabled:opacity-40 text-white text-sm font-semibold cursor-pointer min-h-[48px]"
+          >
+            <Swords className="w-4 h-4" />
+            Start a challenge
+          </button>
+        </section>
+
         {history.length > 0 && (
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
             <h3 className="text-sm font-bold text-slate-900">Recent results</h3>
@@ -442,7 +578,7 @@ export function ExamPanel({
       <div className="space-y-4">
         <div className="sticky top-0 z-10 -mx-1 px-1 py-2 bg-white/95 backdrop-blur border-b border-slate-200 flex items-center justify-between gap-3">
           <div className="text-xs text-slate-700">
-            <span className="font-bold text-slate-900">{mode === "weak" ? "Practice" : subject}</span>
+            <span className="font-bold text-slate-900">{runLabel}</span>
             <span className="text-slate-500"> · {answeredCount}/{questions.length} answered</span>
           </div>
           {endsAt !== null && (
@@ -537,6 +673,63 @@ export function ExamPanel({
         </div>
         <div className={`text-sm font-semibold ${v.tone}`}>{v.label}</div>
       </section>
+
+      {(mode === "challenge-send" || mode === "challenge-play") && (() => {
+        const mine = firstName(profile.name);
+        const challengeToSend: Challenge = {
+          from: mine,
+          subject: runLabel,
+          score: correctCount,
+          total: questions.length,
+          questions: questions.map((q) => ({
+            question: q.question,
+            options: q.options,
+            correctIndex: q.correctIndex,
+          })),
+        };
+        const link = buildChallengeUrl(challengeToSend, window.location.origin);
+        const theirs = activeChallenge;
+        const text =
+          mode === "challenge-play" && theirs
+            ? `🎯 I took ${theirs.from}'s ${runLabel} challenge on Kasukulu and scored ${correctCount}/${questions.length}. ${theirs.from} got ${theirs.score}/${theirs.total}. Think you can beat me? ${link}`
+            : `🏆 I scored ${correctCount}/${questions.length} in ${runLabel} on Kasukulu! Can you beat me? Take my challenge: ${link}`;
+        let headline = "Now challenge a friend!";
+        if (mode === "challenge-play" && theirs) {
+          headline =
+            correctCount > theirs.score
+              ? `You beat ${theirs.from}! 🎉 (${correctCount} to ${theirs.score})`
+              : correctCount === theirs.score
+              ? `It's a draw with ${theirs.from}! 🤝 (${correctCount} each)`
+              : `${theirs.from} wins this time (${theirs.score} to ${correctCount}). Try again!`;
+        }
+        return (
+          <section className="rounded-2xl border-2 border-sky-300 bg-sky-50 p-5 space-y-3">
+            <h3 className="text-sm font-bold text-sky-950">{headline}</h3>
+            <div className="flex flex-wrap gap-2">
+              <a
+                href={whatsappShareUrl(text)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold min-h-[48px]"
+              >
+                <Share2 className="w-4 h-4" />
+                {mode === "challenge-play" ? "Challenge back on WhatsApp" : "Send on WhatsApp"}
+              </a>
+              <button
+                type="button"
+                onClick={async () => {
+                  const done = await copyText(text);
+                  setCopied(done);
+                }}
+                className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white border border-sky-300 text-sky-900 text-sm font-semibold hover:bg-sky-100 cursor-pointer min-h-[48px]"
+              >
+                <Copy className="w-4 h-4" />
+                {copied ? "Copied!" : "Copy message"}
+              </button>
+            </div>
+          </section>
+        );
+      })()}
 
       {byTopic.length > 1 && (
         <section className="rounded-2xl border border-slate-200 bg-white p-5">

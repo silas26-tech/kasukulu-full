@@ -29,6 +29,12 @@ import {
   type NationwideCompetition,
 } from "./src/data/competitions.ts";
 import { speakableMath, tidyDeep, tidyMath } from "./src/utils/mathText.ts";
+import {
+  recordGeminiResponse,
+  recordLiveSeconds,
+  usageContext,
+  usageReport,
+} from "./src/utils/usageMeter.ts";
 // Server-only: holds correct answers + marking schemes. Never import from client code.
 import { NATIONWIDE_COMPETITIONS } from "./src/data/competitions.server.ts";
 
@@ -200,12 +206,14 @@ async function generateContentWithFallback(
   fallbackModel = "gemini-3.1-flash-lite"
 ) {
   try {
-    return await withRetry(() =>
+    const result = await withRetry(() =>
       ai.models.generateContent({
         ...payload,
         model: primaryModel,
       })
     );
+    recordGeminiResponse(result);
+    return result;
   } catch (primaryErr) {
     if (
       fallbackModel &&
@@ -215,12 +223,14 @@ async function generateContentWithFallback(
       console.warn(
         `Model ${primaryModel} hit quota/availability limit; falling back to ${fallbackModel}.`
       );
-      return await withRetry(() =>
+      const fallbackResult = await withRetry(() =>
         ai.models.generateContent({
           ...payload,
           model: fallbackModel,
         })
       );
+      recordGeminiResponse(fallbackResult);
+      return fallbackResult;
     }
     throw primaryErr;
   }
@@ -628,9 +638,31 @@ async function startServer() {
         res.status(429).json({ error: blocked.message });
         return;
       }
-      next();
+      // Everything the AI costs during this request is counted against this learner.
+      usageContext.run({ deviceId, route: req.originalUrl.split("?")[0] }, () => next());
     }
   );
+
+  // Cost report for the owner. Switched on by setting ADMIN_USAGE_KEY on the host.
+  app.get("/api/admin/usage", async (req, res) => {
+    const secret = process.env.ADMIN_USAGE_KEY;
+    if (!secret) {
+      res.status(404).json({
+        error: "Usage tracking is not switched on. Add ADMIN_USAGE_KEY on your host.",
+      });
+      return;
+    }
+    const given = String(req.headers["x-admin-key"] ?? "");
+    const a = crypto.createHash("sha256").update(given).digest();
+    const b = crypto.createHash("sha256").update(secret).digest();
+    if (!crypto.timingSafeEqual(a, b)) {
+      await new Promise((r) => setTimeout(r, 800));
+      res.status(401).json({ error: "That key is not correct." });
+      return;
+    }
+    res.set("Cache-Control", "no-store");
+    res.json(usageReport());
+  });
 
   // Health check
   app.get("/api/health", (_req, res) => {
@@ -1519,6 +1551,7 @@ async function startServer() {
         response = await synthesizeWithModel("gemini-3.8-flash-lite-tts");
       }
 
+      recordGeminiResponse(response, "tts");
       const base64Audio =
         response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
 
@@ -2014,7 +2047,12 @@ async function startServer() {
     }
   });
 
-  wss.on("connection", (clientWs: WebSocket) => {
+  wss.on("connection", (clientWs: WebSocket, req: http.IncomingMessage) => {
+    const liveStartedAt = Date.now();
+    const liveDeviceId = deviceIdFrom(req);
+    clientWs.on("close", () => {
+      recordLiveSeconds(liveDeviceId, (Date.now() - liveStartedAt) / 1000);
+    });
     let liveSession: Awaited<ReturnType<GoogleGenAI["live"]["connect"]>> | null =
       null;
     let isClosing = false;

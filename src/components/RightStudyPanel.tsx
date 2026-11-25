@@ -43,6 +43,7 @@ import { MonthlyTestsPanel } from "./MonthlyTestsPanel";
 import { StudyFlashcards } from "./StudyFlashcards";
 import { LessonPanel } from "./LessonPanel";
 import { ExamPanel } from "./ExamPanel";
+import type { Challenge } from "../utils/challenge";
 import { StudyWeaknessesPanel } from "./StudyWeaknessesPanel";
 
 export type StudyTab =
@@ -59,6 +60,8 @@ export type StudyTab =
   | "weaknesses";
 
 interface RightStudyPanelProps {
+  incomingChallenge?: Challenge | null;
+  onChallengeHandled?: () => void;
   activeTab: StudyTab;
   onTabChange: (tab: StudyTab) => void;
   wingMode?: "school" | "alevel";
@@ -120,6 +123,8 @@ const ALEVEL_SUBJECT_FILTERS = [
 ];
 
 export function RightStudyPanel({
+  incomingChallenge,
+  onChallengeHandled,
   activeTab,
   onTabChange,
   wingMode = "school",
@@ -611,6 +616,8 @@ export function RightStudyPanel({
             weaknesses={progress.weaknesses ?? []}
             onRecordQuizAnswer={onRecordQuizAnswer}
             onAskTutorText={onAskTutorText}
+            incomingChallenge={incomingChallenge}
+            onChallengeHandled={onChallengeHandled}
           />
         )}
 
