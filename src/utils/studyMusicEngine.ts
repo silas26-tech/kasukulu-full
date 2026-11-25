@@ -5,7 +5,11 @@ export type StudyTrackId =
   | "luangwa-sunshine"
   | "zambezi-lofi"
   | "library-kalimba"
-  | "night-rain";
+  | "night-rain"
+  | "still-water"
+  | "quiet-piano"
+  | "music-box"
+  | "evening-glow";
 
 export type TrackMood = "encouraging" | "focus" | "calm";
 
@@ -58,6 +62,30 @@ export const STUDY_TRACKS: StudyTrackInfo[] = [
     name: "Night Revision Rain",
     subtitle: "Soft rainfall & calm harmonic swell",
     mood: "calm",
+  },
+  {
+    id: "still-water",
+    name: "Still Water",
+    subtitle: "Very quiet, slow soft pads. No noise, no beat",
+    mood: "calm",
+  },
+  {
+    id: "quiet-piano",
+    name: "Quiet Piano",
+    subtitle: "A few soft piano-like notes. Easy on the mind",
+    mood: "calm",
+  },
+  {
+    id: "music-box",
+    name: "Music Box",
+    subtitle: "Tiny, gentle bell notes. Peaceful and clear",
+    mood: "calm",
+  },
+  {
+    id: "evening-glow",
+    name: "Evening Glow",
+    subtitle: "Warm, slow and soft. Good for long revision",
+    mood: "focus",
   },
 ];
 
@@ -160,6 +188,97 @@ const RAIN_CHORDS: number[][] = [
   [43, 50, 57, 59], // G6
 ];
 
+
+// Extra very quiet tracks: no noise layer, no beat, only a few soft notes.
+interface QuietTrack {
+  chords: number[][];
+  melody: Array<number | null>;
+  stepMs: number;
+  filterHz: number;
+  padGain: number;
+  padSec: number;
+  melodyGain: number;
+  melodyKind: "piano" | "bell" | "none";
+}
+
+const QUIET_TRACKS: Partial<Record<StudyTrackId, QuietTrack>> = {
+  "still-water": {
+    chords: [
+      [48, 55, 59, 64], // Cmaj7
+      [45, 52, 57, 64], // Am(add9)
+      [41, 48, 57, 60], // Fmaj7
+      [43, 50, 55, 62], // Gadd9 (soft)
+    ],
+    melody: [],
+    stepMs: 700,
+    filterHz: 900,
+    padGain: 0.04,
+    padSec: 6.2,
+    melodyGain: 0,
+    melodyKind: "none",
+  },
+  "quiet-piano": {
+    chords: [
+      [48, 52, 55, 59],
+      [45, 48, 52, 59],
+      [41, 45, 48, 55],
+      [43, 47, 50, 57],
+    ],
+    melody: [
+      72, null, null, null, 76, null, null, null,
+      74, null, null, null, 71, null, null, null,
+      69, null, null, null, 72, null, null, null,
+      71, null, null, null, 67, null, null, null,
+    ],
+    stepMs: 620,
+    filterHz: 1100,
+    padGain: 0.022,
+    padSec: 5,
+    melodyGain: 0.05,
+    melodyKind: "piano",
+  },
+  "music-box": {
+    chords: [
+      [48, 55, 60, 64],
+      [45, 52, 57, 64],
+      [41, 48, 53, 60],
+      [43, 50, 55, 62],
+    ],
+    melody: [
+      79, null, 76, null, 79, null, 84, null,
+      83, null, 79, null, 76, null, null, null,
+      77, null, 81, null, 84, null, 81, null,
+      79, null, 76, null, 74, null, null, null,
+    ],
+    stepMs: 560,
+    filterHz: 2200,
+    padGain: 0.012,
+    padSec: 5,
+    melodyGain: 0.035,
+    melodyKind: "bell",
+  },
+  "evening-glow": {
+    chords: [
+      [50, 57, 62, 66], // Dmaj add
+      [47, 54, 59, 66], // Bm
+      [43, 50, 55, 62], // G
+      [45, 52, 57, 64], // A
+    ],
+    melody: [
+      69, null, null, 74, null, null, 73, null,
+      null, null, 71, null, null, null, null, null,
+      66, null, null, 71, null, null, 69, null,
+      null, null, 68, null, null, null, null, null,
+    ],
+    stepMs: 560,
+    filterHz: 1000,
+    padGain: 0.036,
+    padSec: 5.4,
+    melodyGain: 0.03,
+    melodyKind: "piano",
+  },
+};
+
 function midiToFreq(midi: number): number {
   return 440 * Math.pow(2, (midi - 69) / 12);
 }
@@ -258,6 +377,8 @@ export class StudyMusicEngine {
   private startAmbientTexture() {
     this.stopAmbientTexture();
     if (!this.ctx || !this.lowpass) return;
+    // The quiet tracks have no background noise at all.
+    if (QUIET_TRACKS[this.trackId]) return;
 
     const ctx = this.ctx;
     const buffer = this.createNoiseBuffer(ctx);
@@ -621,6 +742,27 @@ export class StudyMusicEngine {
       if (stepInLoop % 2 === 0 || stepInLoop % 5 === 0) {
         this.playWarmVoice(midiToFreq(pluckMidi), 0.95, 0.06, "triangle", 0.015);
       }
+    } else if (QUIET_TRACKS[this.trackId]) {
+      const q = QUIET_TRACKS[this.trackId]!;
+      const loop = Math.max(32, q.melody.length || 32);
+      const stepInLoop = this.stepIndex % loop;
+      if (stepInLoop % 8 === 0) {
+        const chord = q.chords[Math.floor(stepInLoop / 8) % q.chords.length];
+        chord.forEach((midi, idx) => {
+          window.setTimeout(() => {
+            if (!this.isPlaying) return;
+            this.playWarmVoice(midiToFreq(midi), q.padSec, q.padGain, "sine", 1.0);
+          }, idx * 110);
+        });
+      }
+      const note = q.melody[stepInLoop];
+      if (q.melodyKind !== "none" && note !== null && note !== undefined) {
+        if (q.melodyKind === "bell") {
+          this.playPluckVoice(midiToFreq(note), 1.6, q.melodyGain, 0.6);
+        } else {
+          this.playWarmVoice(midiToFreq(note), 2.2, q.melodyGain, "triangle", 0.04);
+        }
+      }
     } else {
       // night-rain: slow breathing chord swells every 8 steps
       const stepInLoop = this.stepIndex % 32;
@@ -639,6 +781,8 @@ export class StudyMusicEngine {
   }
 
   private getStepIntervalMs(): number {
+    const quiet = QUIET_TRACKS[this.trackId];
+    if (quiet) return quiet.stepMs;
     switch (this.trackId) {
       case "kopala-drive":
         return 330; // ~90 BPM motivating rhythm
@@ -754,7 +898,7 @@ export class StudyMusicEngine {
 
   private updateFilterForTrack() {
     if (!this.ctx || !this.lowpass) return;
-    let freq = 1400;
+    let freq = QUIET_TRACKS[this.trackId]?.filterHz ?? 1400;
     switch (this.trackId) {
       case "victoria-dawn":
         freq = 1850;
