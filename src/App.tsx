@@ -1863,6 +1863,24 @@ export default function App() {
               />
               <span>Home</span>
             </button>
+            {profile.grade !== "A-Level" && (
+              <button
+                type="button"
+                onClick={() => navigateAppView("studio", "lesson")}
+                className={`inline-flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-xl transition-all duration-150 whitespace-nowrap shrink-0 cursor-pointer ${
+                  appView === "studio" && rightTab === "lesson"
+                    ? "bg-emerald-700 text-white font-semibold shadow-xs"
+                    : "bg-amber-50 text-amber-900 font-semibold hover:bg-amber-100"
+                }`}
+              >
+                <GraduationCap
+                  className={`w-3.5 h-3.5 ${
+                    appView === "studio" && rightTab === "lesson" ? "text-amber-300" : "text-amber-700"
+                  }`}
+                />
+                <span>Lessons</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => navigateAppView("subjects")}
@@ -1885,14 +1903,14 @@ export default function App() {
               type="button"
               onClick={() => navigateAppView("studio", "blackboard")}
               className={`inline-flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-xl transition-all duration-150 whitespace-nowrap shrink-0 cursor-pointer ${
-                appView === "studio"
+                appView === "studio" && rightTab !== "lesson"
                   ? "bg-emerald-700 text-white font-semibold shadow-xs"
                   : "text-slate-600 hover:text-slate-950 hover:bg-slate-100"
               }`}
             >
               <Mic
                 className={`w-3.5 h-3.5 ${
-                  appView === "studio"
+                  appView === "studio" && rightTab !== "lesson"
                     ? "text-amber-300"
                     : "text-emerald-700"
                 }`}
@@ -2023,6 +2041,9 @@ export default function App() {
           {(
             [
               { id: "home" as const, label: "Home", icon: Home },
+              ...(profile.grade !== "A-Level"
+                ? [{ id: "lessons" as const, label: "Lessons", icon: GraduationCap }]
+                : []),
               { id: "subjects" as const, label: "Subjects", icon: BookOpen },
               { id: "studio" as const, label: "Voice Studio", icon: Mic },
               { id: "papers" as const, label: "Past Papers", icon: FileText },
@@ -2033,13 +2054,20 @@ export default function App() {
             ]
           ).map((item) => {
             const Icon = item.icon;
-            const active = appView === item.id;
+            const active =
+              item.id === "lessons"
+                ? appView === "studio" && rightTab === "lesson"
+                : item.id === "studio"
+                ? appView === "studio" && rightTab !== "lesson"
+                : appView === item.id;
             return (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => {
-                  if (item.id === "subjects") {
+                  if (item.id === "lessons") {
+                    navigateAppView("studio", "lesson");
+                  } else if (item.id === "subjects") {
                     navigateAppView("subjects");
                   } else if (item.id === "papers") {
                     navigateAppView("papers");
