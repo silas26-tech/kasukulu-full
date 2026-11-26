@@ -1,0 +1,1261 @@
+{
+ "real-g12-math-2020-p1-gce": {
+  "1": {
+   "parts": [
+    {
+     "label": "",
+     "solution": "Remove the bracket and collect like terms ; 2a + b − a − 2b ; = (2a − a) + (b − 2b) = a − b",
+     "answer": "a − b"
+    }
+   ]
+  },
+  "2": {
+   "parts": [
+    {
+     "label": "",
+     "solution": "(64/125)^(1/3) = 64^(1/3) / 125^(1/3) = 4/5 ; The negative power inverts the fraction ; (64/125)^(−1/3) = 5/4",
+     "answer": "5/4 (= 1.25)"
+    }
+   ]
+  },
+  "3": {
+   "parts": [
+    {
+     "label": "",
+     "solution": "3y = x + 6 ⇒ y = (1/3)x + 2, so its gradient is 1/3 ; For perpendicular lines the gradients multiply to −1 ; (1/3) × k = −1 ⇒ k = −3",
+     "answer": "k = −3"
+    }
+   ]
+  },
+  "4": {
+   "parts": [
+    {
+     "label": "",
+     "solution": "Group in pairs: (6ax − 4ay) − (3bx − 2by) ; = 2a(3x − 2y) − b(3x − 2y) ; = (3x − 2y)(2a − b)",
+     "answer": "(3x − 2y)(2a − b)"
+    }
+   ]
+  },
+  "5": {
+   "parts": [
+    {
+     "label": "",
+     "solution": "AB→ = B − A = (1 − (−2), 5 − 1) = (3, 4) ; |AB→| = √(3² + 4²) = √(9 + 16) = √25 = 5",
+     "answer": "|AB→| = 5"
+    }
+   ]
+  },
+  "6": {
+   "parts": [
+    {
+     "label": "",
+     "solution": "The shaded lens lies inside both Q and the lower circle R, but outside P ; = (Q ∩ R) ∩ P′",
+     "answer": "(Q ∩ R) ∩ P′"
+    }
+   ]
+  },
+  "7": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Transpose swaps rows and columns",
+     "answer": "Cᵀ = [[7,−1],[6,0]]"
+    },
+    {
+     "label": "(b)",
+     "solution": "AB = [[2(−1)+3x, 2(0)+3(2)],[1(−1)+0, 0]] = [[3x − 2, 6],[−1, 0]] ; Compare with C: 3x − 2 = 7 ⇒ 3x = 9 ⇒ x = 3",
+     "answer": "x = 3"
+    }
+   ]
+  },
+  "8": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "T11 = a + 10d = 43 ⇒ 3 + 10d = 43 ⇒ 10d = 40",
+     "answer": "d = 4"
+    },
+    {
+     "label": "(b)",
+     "solution": "T4 = a + 3d = 3 + 3(4) = 15",
+     "answer": "T4 = 15"
+    }
+   ]
+  },
+  "9": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Distance = speed × time = 900 × 5 = 4 500 nautical miles",
+     "answer": "4 500 nautical miles"
+    },
+    {
+     "label": "(b)",
+     "solution": "Longitude difference = 5 × 15° = 75° ; Q is east of P, so P is further west ; Longitude of P = 85°E − 75° = 10°E",
+     "answer": "10°E"
+    }
+   ]
+  },
+  "10": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "P(wearing) = 1 − 0.55 = 0.45",
+     "answer": "0.45"
+    },
+    {
+     "label": "(b)",
+     "solution": "Write both sides in base 2: 2^(3(x−1)) = 2⁴ ; 3(x − 1) = 4 ⇒ 3x − 3 = 4 ⇒ 3x = 7",
+     "answer": "x = 7/3"
+    }
+   ]
+  },
+  "11": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Primes greater than 1 and at most 15: 2, 3, 5, 7, 11, 13",
+     "answer": "S = {2, 3, 5, 7, 11, 13}"
+    },
+    {
+     "label": "(b)",
+     "solution": "Each of the 4 triangular faces has base 6 cm and slant height 5 cm ; Area of one face = ½ × 6 × 5 = 15 cm² ; Four faces = 4 × 15 = 60 cm²",
+     "answer": "60 cm²"
+    }
+   ]
+  },
+  "12": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Let y = 2x − 5 ⇒ x = (y + 5)/2 ; Swap variables",
+     "answer": "f⁻¹(x) = (x + 5)/2"
+    },
+    {
+     "label": "(b)",
+     "solution": "A function and its inverse undo each other, so ff⁻¹(2) = 2",
+     "answer": "2"
+    },
+    {
+     "label": "(c)",
+     "solution": "ff(x) = f(2x − 5) = 2(2x − 5) − 5 = 4x − 15 ; 4x − 15 = x ⇒ 3x = 15 ⇒ x = 5",
+     "answer": "x = 5"
+    }
+   ]
+  },
+  "13": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "P and Q are the same size and the same way round (not turned or flipped), just lower down ; So it is a translation; from the grid P moves straight down about 4 units",
+     "answer": "A translation by the column vector (0, −4)"
+    },
+    {
+     "label": "(b)",
+     "solution": "Differentiate term by term using d/dx(axⁿ) = anxⁿ⁻¹ ; d/dx(2x³) = 6x² [the second term of y was hidden by the watermark in the source; solution only gives the derivative of the first term]",
+     "answer": "dy/dx = 6x² − (derivative of the second term) [unclear]"
+    }
+   ]
+  },
+  "14": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Since OB = AB, triangle OAB is isosceles so ∠AOB = ∠OAB ; ∠AOB + ∠OAB + 40° = 180° ⇒ 2∠AOB = 140° ⇒ ∠AOB = 70° ; Bearing of B from O = 030° + 70° = 100° ; Bearing of O from A = 030° + 180° = 210°; ∠OAB = 70° opens toward B (east side) ; Bearing of B from A = 210° − 70° = 140°",
+     "answer": "140°"
+    },
+    {
+     "label": "(b)",
+     "solution": "Reverse of the bearing of B from O: 100° + 180° = 280°",
+     "answer": "280°"
+    }
+   ]
+  },
+  "15": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Limits: 4.15 ≤ x < 4.25 and 7.25 ≤ y < 7.35 ; max x + y = 4.25 + 7.35 = 11.60",
+     "answer": "11.60"
+    },
+    {
+     "label": "(b)",
+     "solution": "min x − max y = 4.15 − 7.35 = −3.20",
+     "answer": "−3.20"
+    }
+   ]
+  },
+  "16": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "y = k/x² ; When x = 2, y = 9: 9 = k/2² = k/4 ⇒ k = 36",
+     "answer": "k = 36"
+    },
+    {
+     "label": "(b)",
+     "solution": "When x = 6: a = 36/6² = 36/36 = 1",
+     "answer": "a = 1"
+    },
+    {
+     "label": "(c)",
+     "solution": "When y = 4: 4 = 36/b² ⇒ b² = 9",
+     "answer": "b = 3 or b = −3"
+    }
+   ]
+  },
+  "17": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Angle at the centre = twice the angle at the circumference on the same arc BD ; ∠BOD = 2 × ∠BAD = 2 × 47° = 94°",
+     "answer": "∠BOD = 94°"
+    },
+    {
+     "label": "(b)",
+     "solution": "OB = OD (radii), so triangle OBD is isosceles ; ∠OBD = (180° − 94°) ÷ 2 = 43°",
+     "answer": "∠OBD = 43°"
+    },
+    {
+     "label": "(c)",
+     "solution": "ABCD is a cyclic quadrilateral, so ∠BCD = 180° − ∠BAD = 180° − 47° = 133° ; In triangle BCD: ∠BDC = 180° − ∠DBC − ∠BCD = 180° − 28° − 133° = 19°",
+     "answer": "∠BDC = 19°"
+    }
+   ]
+  },
+  "18": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "cos(∠PQR) = adjacent/hypotenuse = QR/PQ ; 2/3 = QR/15 ⇒ QR = 15 × 2/3 = 10 cm",
+     "answer": "QR = 10 cm"
+    },
+    {
+     "label": "(b)",
+     "solution": "At the y-axis x = 0: 3y = −6 ⇒ y = −2",
+     "answer": "y = −2"
+    }
+   ]
+  },
+  "19": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "ABCD measures 10 × 4. With ABCD ~ DAEF, side AB (10) corresponds to DA (4) ; Scale factor (ABCD : DAEF) = 10 : 4 = 5 : 2 ; BC (= 4) corresponds to AE: 4 ÷ (5/2) = 1.6 cm, so DAEF = 4 × 1.6 ; Area of DAEF = 6.4 cm² (check: 40 × (2/5)² = 6.4)",
+     "answer": "Area of DAEF = 6.4 cm²"
+    },
+    {
+     "label": "(b)",
+     "solution": "Profit per share = 42.50 − 40.00 = K2.50 ; Total profit = 120 × 2.50 = K300.00",
+     "answer": "K300.00"
+    }
+   ]
+  },
+  "20": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Shade triangles so the whole pattern looks the same after a 120° turn about the centre (three identical copies spaced 120° apart)",
+     "answer": "Add three triangles equally spaced (120° apart) about the centre to match the given one."
+    },
+    {
+     "label": "(b)",
+     "solution": "Start → Input P, T, R (parallelogram) → I = PTR/100 (process rectangle) → Print I → Stop",
+     "answer": "Input P, T, R ; I = PTR/100"
+    }
+   ]
+  },
+  "21": {
+   "parts": [
+    {
+     "label": "",
+     "solution": "Each boundary uses the given points ; AE (y = 1), R above it: y ≥ 1 ; DE (x = 7), R to the left: x ≤ 7 ; BC through (0,7) and (14,0): x + 2y = 14, R below it: x + 2y ≤ 14 ; AB through (1,1) and (0,7): 6x + y = 7, R to the right of it: 6x + y ≥ 7",
+     "answer": "y ≥ 1, x ≤ 7, x + 2y ≤ 14, 6x + y ≥ 7"
+    }
+   ]
+  },
+  "22": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "x² − 7x − 8 = 0 ⇒ (x − 8)(x + 1) = 0",
+     "answer": "x = 8 or x = −1"
+    },
+    {
+     "label": "(b)(i)",
+     "solution": "x-intercepts (A, B): −4(x − ½)² + 9 = 0 ⇒ (x − ½)² = 9/4 ⇒ x − ½ = ±3/2 ; x = −1 or x = 2",
+     "answer": "x-coordinates of A and B: −1 and 2"
+    },
+    {
+     "label": "(b)(ii)",
+     "solution": "C is the turning point (vertex): x = ½, y = 9",
+     "answer": "C = (½, 9)"
+    }
+   ]
+  },
+  "23": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "a = (9 − 0)/4 = 2.25 m/s²",
+     "answer": "2.25 m/s²"
+    },
+    {
+     "label": "(b)",
+     "solution": "0–4 s: ½(4)(9) = 18 m ; 4–20 s: 16 × 9 = 144 m ; Total = 18 + 144 = 162 m",
+     "answer": "162 m"
+    },
+    {
+     "label": "(c)",
+     "solution": "Whole race = 200 m. Last part (20 → 25 s) is a trapezium from 9 to U ; 162 + ½(9 + U)(5) = 200 ⇒ ½(9 + U)(5) = 38 ; (9 + U)(5) = 76 ⇒ 9 + U = 15.2 ⇒ U = 6.2 m/s",
+     "answer": "U = 6.2 m/s"
+    }
+   ]
+  }
+ },
+ "real-g12-math-2020-p2": {
+  "1": {
+   "parts": [
+    {
+     "label": "(a)(i)",
+     "solution": "No inverse ⇒ det A = 0 ; det A = (5)(x) − (2)(2) = 5x − 4 ; 5x − 4 = 0 ⇒ x = 4/5",
+     "answer": "x = 4/5 = 0.8"
+    },
+    {
+     "label": "(a)(ii)",
+     "solution": "A = [[5,2],[2,1]], det A = (5)(1) − (2)(2) = 5 − 4 = 1 ; A⁻¹ = (1/det)[[d,−b],[−c,a]] = (1/1)[[1,−2],[−2,5]]",
+     "answer": "A⁻¹ = [[1,−2],[−2,5]]"
+    },
+    {
+     "label": "(b)(i)",
+     "solution": "First draw: P(R) = 7/10, P(W) = 3/10 ; Second draw (no replacement) branches: R then R: 7/10 × 6/9 ; R then W: 7/10 × 3/9 ; W then R: 3/10 × 7/9 ; W then W: 3/10 × 2/9",
+     "answer": "Tree diagram with branches R 7/10, W 3/10 at first draw; second draw RR 6/9, RW 3/9, WR 7/9, WW 2/9"
+    },
+    {
+     "label": "(b)(ii)",
+     "solution": "P(at least one W) = 1 − P(no white) = 1 − P(R then R) ; = 1 − (7/10 × 6/9) = 1 − 42/90 = 1 − 7/15",
+     "answer": "8/15"
+    }
+   ]
+  },
+  "2": {
+   "parts": [
+    {
+     "label": "(a)(i)",
+     "solution": "Fill the Venn from the centre outwards (F, S, C) ; All three: F∩S∩C = 50 ; F∩S only = 61 − 50 = 11 ; S∩C only = 71 − 50 = 21 ; F∩C only = 60 − 50 = 10 ; F only = 74 − (11 + 10 + 50) = 3 ; S only = 93 − (11 + 21 + 50) = 11 ; C only = 87 − (10 + 21 + 50) = 6 ; Inside circles = 3 + 11 + 6 + 11 + 21 + 10 + 50 = 112",
+     "answer": "Venn diagram with F only 3, S only 11, C only 6, F∩S only 11, S∩C only 21, F∩C only 10, all three 50, outside 3"
+    },
+    {
+     "label": "(a)(ii)(a)",
+     "solution": "115 − 112 = 3",
+     "answer": "3 students"
+    },
+    {
+     "label": "(a)(ii)(b)",
+     "solution": "F∩S only region",
+     "answer": "11 students"
+    },
+    {
+     "label": "(a)(ii)(c)",
+     "solution": "(F∩S only) + (S∩C only) + (F∩C only) + (all three) = 11 + 21 + 10 + 50",
+     "answer": "92 students"
+    },
+    {
+     "label": "(b)(i)(a)",
+     "solution": "M is the midpoint of AB ; AM→ = ½AB→ = ½(8p)",
+     "answer": "AM→ = 4p"
+    },
+    {
+     "label": "(b)(i)(b)",
+     "solution": "AV→ = AB→ + BV→ = 8p + (−6p + kq)",
+     "answer": "AV→ = 2p + kq"
+    },
+    {
+     "label": "(b)(ii)",
+     "solution": "2p + kq = h(4p + 9q) = 4h p + 9h q ; Compare p: 4h = 2 ⇒ h = 1/2 ; Compare q: 9h = k ⇒ k = 9(1/2)",
+     "answer": "h = 1/2, k = 9/2"
+    }
+   ]
+  },
+  "3": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Quadratic formula, a = 1, b = −1, c = −19 ; x = [−b ± √(b² − 4ac)] / 2a ; x = [1 ± √(1 + 76)] / 2 = [1 ± √77] / 2 ; √77 = 8.77496… ; x = (1 + 8.77496)/2 = 4.887 or x = (1 − 8.77496)/2 = −3.887",
+     "answer": "x = 4.89 or x = −3.89"
+    },
+    {
+     "label": "(b)",
+     "solution": "Start ; Enter ℓ ; If ℓ < 0 then ; Display \"Error: ℓ must be positive\" ; Else ; Enter h ; If h < 0 then ; Display \"Error: h must be positive\" ; Else ; Volume = (1/3) * ℓ^2 * h ; Display Volume ; End If ; End If ; Stop (note: the variable symbol is shown as a placeholder glyph in the printed solution; [unclear] whether l or ℓ)",
+     "answer": "Pseudo code: Start; Enter ℓ; If ℓ < 0 display error else Enter h; if h < 0 display error else Volume = 1/3 * ℓ^2 * h, Display Volume; End If; End If; Stop"
+    }
+   ]
+  },
+  "4": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Draw base PQ = 8 cm ; At P, construct ∠QPS = 120° and mark PS = 6 cm to fix S ; At Q, construct ∠PQR = 120° and mark QR = 5 cm to fix R ; Join R to S to complete quadrilateral PQRS",
+     "answer": "Construction of quadrilateral PQRS"
+    },
+    {
+     "label": "(b)",
+     "solution": "Take P(0,0), Q(8,0). S = P + 6(cos120°, sin120°) = (−3, 5.196) ; R = Q + 5(cos60°, sin60°) = (10.5, 4.330) ; RS = √[(10.5−(−3))² + (4.330−5.196)²] = √(13.5² + 0.866²) = √183.0",
+     "answer": "RS ≈ 13.5 cm (accept your measured value)"
+    },
+    {
+     "label": "(c)(i)",
+     "solution": "Arc of a circle, centre Q, radius 4.5 cm",
+     "answer": "Arc of circle centre Q, radius 4.5 cm"
+    },
+    {
+     "label": "(c)(ii)",
+     "solution": "Perpendicular bisector of PQ",
+     "answer": "Perpendicular bisector of PQ"
+    },
+    {
+     "label": "(c)(iii)",
+     "solution": "Bisector of the angle QRS (between QR and RS)",
+     "answer": "Bisector of angle QRS"
+    },
+    {
+     "label": "(d)",
+     "solution": "T satisfies ALL three: inside the 4.5 cm arc of Q (≤ 4.5 cm from Q) ; on the Q-side of the perpendicular bisector of PQ (nearer Q than P) ; and on the RS-side of the angle bisector at R (nearer RS than QR)",
+     "answer": "Shade the overlap of these three regions inside PQRS"
+    }
+   ]
+  },
+  "5": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Factorise the numerator ; 2 − 18p² = 2(1 − 9p²) = 2(1 − 3p)(1 + 3p) ; (2(1 − 3p)(1 + 3p)) / (3p + 1), and (1 + 3p) = (3p + 1)",
+     "answer": "2(1 − 3p) = 2 − 6p"
+    },
+    {
+     "label": "(b)(i)",
+     "solution": "Common ratio equal ⇒ (m+1)/(m−2) = (m+7)/(m+1) ; (m + 1)² = (m − 2)(m + 7) ; m² + 2m + 1 = m² + 5m − 14 ; 2m + 1 = 5m − 14 ⇒ 15 = 3m",
+     "answer": "m = 5"
+    },
+    {
+     "label": "(b)(ii)",
+     "solution": "Terms: m − 2 = 3, m + 1 = 6, m + 7 = 12 ; r = 6/3 = 2",
+     "answer": "r = 2"
+    },
+    {
+     "label": "(b)(iii)",
+     "solution": "a = 3, r = 2 ; S₆ = a(r⁶ − 1)/(r − 1) = 3(2⁶ − 1)/(2 − 1) = 3(64 − 1)/1",
+     "answer": "S₆ = 189"
+    }
+   ]
+  },
+  "6": {
+   "parts": [
+    {
+     "label": "",
+     "solution": "Restore the full cone (similar triangles) ; Top radius : base radius = 5 : 10 = 1 : 2 ; If full-cone height = H, the small cut-off cone height = H − 12 ; (H − 12)/H = 5/10 = 1/2 ⇒ 2(H − 12) = H ⇒ H = 24 ; Small cone height = 24 − 12 = 12 cm ; Volume of frustum = big cone − small cone ; = (1/3)π(10²)(24) − (1/3)π(5²)(12) [fraction glyph unclear in print, value consistent with 1/3] ; = (1/3)π(2400 − 300) = (1/3)π(2100) = 700π ; = 700 × 3.142 ; Check using V = (1/3)πh(R² + Rr + r²) = (1/3)(3.142)(12)(100 + 50 + 25) = 3.142 × 700 = 2199.4 cm³",
+     "answer": "Volume ≈ 2199.4 cm³"
+    }
+   ]
+  },
+  "7": {
+   "parts": [
+    {
+     "label": "(a)(i)",
+     "solution": "p = value of y at x = 2 ; p = 2³ + 4(2²) + 2 − 5 = 8 + 16 + 2 − 5",
+     "answer": "p = 21"
+    },
+    {
+     "label": "(a)(ii)",
+     "solution": "Plot (−4,−9), (−3,1), (−2,1), (−1,−3), (0,−5), (1,1), (2,21) ; join with a smooth curve. Scale: 2 cm = 1 unit (x), 2 cm = 5 units (y)",
+     "answer": "Smooth cubic curve through the plotted points"
+    },
+    {
+     "label": "(a)(iii)(a)",
+     "solution": "Read the x-values where the curve crosses the x-axis (y = 0)",
+     "answer": "x ≈ −3.2, x ≈ −1.7, x ≈ 0.9 (read from the graph)"
+    },
+    {
+     "label": "(a)(iii)(b)",
+     "solution": "Draw the straight line y = 2x + 4 (through (0,4), (−2,0), (2,8)) ; Read the x-coordinates where the line cuts the curve",
+     "answer": "x ≈ −3.6, x ≈ −1.9, x ≈ 1.4 (read from the graph)"
+    },
+    {
+     "label": "(b)",
+     "solution": "Common denominator (2x − 1)(3x + 2) ; = [4(3x + 2) − (2x − 1)] / [(2x − 1)(3x + 2)] ; = [12x + 8 − 2x + 1] / [(2x − 1)(3x + 2)]",
+     "answer": "(10x + 9) / [(2x − 1)(3x + 2)]"
+    }
+   ]
+  },
+  "8": {
+   "parts": [
+    {
+     "label": "(a)(i)",
+     "solution": "They are on opposite sides of 0° (Q 41°E, R 21°W) ⇒ add: 41° + 21°",
+     "answer": "62°"
+    },
+    {
+     "label": "(a)(ii)(a)",
+     "solution": "Same meridian 41°E, from 80°N to 60°S ; Difference in latitude = 80° + 60° = 140° ; Distance = (140/360) × 2πR = (140/360) × 2 × 3.142 × 3437 ; = (140/360) × 21598.0",
+     "answer": "PQ ≈ 8399 nm (≈ 140 × 60 = 8400 nm)"
+    },
+    {
+     "label": "(a)(ii)(b)",
+     "solution": "Same latitude 60°S, longitudes 21°W to 71°W ; Difference in longitude = 71° − 21° = 50° ; Distance = (50/360) × 2πR × cos 60° ; = (50/360) × 21598.0 × 0.5",
+     "answer": "RT ≈ 1500 nm"
+    },
+    {
+     "label": "(b)",
+     "solution": "y = ∫(x² − 4x + 3) dx = x³/3 − 2x² + 3x + C ; Through (3, −1): 27/3 − 2(9) + 9 + C = −1 ; 9 − 18 + 9 + C = −1 ⇒ C = −1",
+     "answer": "y = x³/3 − 2x² + 3x − 1"
+    },
+    {
+     "label": "(c)",
+     "solution": "dy/dx = 3x² − 4x − 4 ; At x = −1: gradient = 3(1) − 4(−1) − 4 = 3 + 4 − 4 = 3 ; Gradient of normal = −1/3 ; y − 2 = −1/3 (x + 1)",
+     "answer": "x + 3y = 5 (i.e. y = −x/3 + 5/3)"
+    }
+   ]
+  },
+  "9": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Mid-values x = 3, 8, 13, 18, 23, 28, 33 ; Σf = 100 ; Σfx = 0 + 16 + 143 + 792 + 713 + 224 + 132 = 2020 ; Mean = 2020/100 = 20.2 ; Σfx² = 0 + 128 + 1859 + 14256 + 16399 + 6272 + 4356 = 43270 ; SD = √(Σfx²/Σf − mean²) = √(432.70 − 408.04) = √24.66",
+     "answer": "SD ≈ 4.97"
+    },
+    {
+     "label": "(b)(i)",
+     "solution": "Cumulative frequency (≤ upper boundary): ≤5: 0, ≤10: 2, ≤15: 13, ≤20: 57, ≤25: 88, ≤30: 96, ≤35: 100",
+     "answer": "≤20: 57, ≤25: 88, ≤30: 96"
+    },
+    {
+     "label": "(b)(ii)",
+     "solution": "Plot (5,0), (10,2), (15,13), (20,57), (25,88), (30,96), (35,100) ; join with a smooth cumulative frequency (ogive) curve",
+     "answer": "Smooth ogive through the plotted points"
+    },
+    {
+     "label": "(b)(iii)",
+     "solution": "n = 100 ; Q1 at 25th value: between (15,13) and (20,57) ; Q1 ≈ 15 + ((25 − 13)/44) × 5 ≈ 16.4 ; Q3 at 75th value: between (20,57) and (25,88) ; Q3 ≈ 20 + ((75 − 57)/31) × 5 ≈ 22.9",
+     "answer": "IQR = Q3 − Q1 ≈ 22.9 − 16.4 ≈ 6.5 (read from the graph)"
+    }
+   ]
+  },
+  "10": {
+   "parts": [
+    {
+     "label": "(a)(i)",
+     "solution": "Angle BAC is opposite BC — cosine rule ; cos A = (AB² + AC² − BC²)/(2·AB·AC) ; = (104.04 + 88.36 − 243.36)/(2 × 10.2 × 9.4) ; = (−50.96)/191.76 = −0.2658 ; A = cos⁻¹(−0.2658) = 105.4°",
+     "answer": "∠BAC ≈ 105°"
+    },
+    {
+     "label": "(a)(ii)",
+     "solution": "Area = ½·AB·AC·sin A ; = ½ × 10.2 × 9.4 × sin 105.4° ; = ½ × 95.88 × 0.9641",
+     "answer": "Area ≈ 46.2 km²"
+    },
+    {
+     "label": "(a)(iii)",
+     "solution": "Shortest distance = perpendicular height ; Area = ½ × BC × h ⇒ 46.2 = ½ × 15.6 × h ; h = 92.44/15.6",
+     "answer": "Shortest distance ≈ 5.93 km"
+    },
+    {
+     "label": "(b)",
+     "solution": "cos θ = 0.5 ⇒ θ = 60° (only solution in 0°–180°)",
+     "answer": "θ = 60°"
+    },
+    {
+     "label": "(c)",
+     "solution": "= (3x²y)/(8xy³) × (4y⁴)/(9x³) ; = (12x²y⁵)/(72x⁴y³) [printed with a placeholder glyph, exponents inferred] = (1/6) x^(−2) y²",
+     "answer": "y²/(6x²)"
+    }
+   ]
+  },
+  "11": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Object ABC = A(2,4), B(3,4), C(3,2) — a right-angled triangle, right angle at B ; Method: join A→A₁, B→B₁, C→C₁ and produce the lines; they meet at the CENTRE ; Scale factor k = (image length)/(object length); k is the same along each ray ; Reading A₁B₁C₁ off the grid (A₁ near (−4, 2)) and using A₁ = O + k(A − O): the join-lines meet at the centre and the image is about twice the object, upright (not inverted), so k is positive",
+     "answer": "Centre ≈ where AA₁, BB₁, CC₁ meet; scale factor k = +2 (read/confirm from your grid)"
+    },
+    {
+     "label": "(b)(i)",
+     "solution": "A(2,4)→A₂(2,−8): x unchanged, y ×(−2) ; B(3,4)→B₂(3,−8): same ; C(3,2)→C₂(3,−4): same ; So M sends (1,0)→(1,0) and (0,1)→(0,−2)",
+     "answer": "M = [[1,0],[0,−2]]"
+    },
+    {
+     "label": "(b)(ii)",
+     "solution": "Area scale factor = |det M| = |(1)(−2) − (0)(0)| = |−2|",
+     "answer": "Area scale factor = 2"
+    },
+    {
+     "label": "(c)",
+     "solution": "Identify the type from the image: compare side lengths/orientation with ABC ; State its full description — for a rotation: centre, angle and direction; for a reflection: the mirror line; for a stretch/shear: invariant line and factor",
+     "answer": "Name the single transformation with its complete description (read from your grid) — the printed solution does not give a specific answer"
+    },
+    {
+     "label": "(d)",
+     "solution": "Matrix [[1,3],[0,1]] applied to A(2,4), B(3,4), C(3,2) ; A₄ = [[1,3],[0,1]](2,4) = (2 + 12, 4) = (14, 4) ; B₄ = (3 + 12, 4) = (15, 4) ; C₄ = (3 + 6, 2) = (9, 2)",
+     "answer": "A₄(14, 4), B₄(15, 4), C₄(9, 2)"
+    }
+   ]
+  },
+  "12": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "At least 10 tables: x ≥ 10 ; At least 20 chairs: y ≥ 20 ; Assembling (4h + 3h, ≤ 240): 4x + 3y ≤ 240 ; Varnishing (2h + 1h, ≤ 100): 2x + y ≤ 100",
+     "answer": "x ≥ 10, y ≥ 20, 4x + 3y ≤ 240, 2x + y ≤ 100"
+    },
+    {
+     "label": "(b)",
+     "solution": "Draw lines x = 10, y = 20, 4x + 3y = 240, 2x + y = 100 and shade OUT the unwanted side of each, leaving the feasible region clear",
+     "answer": "Graph with the feasible region left unshaded"
+    },
+    {
+     "label": "(c)",
+     "solution": "Test the corner points, P = 300x + 250y ; (10,20): P = 3000 + 5000 = K8 000 ; (40,20): P = 12000 + 5000 = K17 000 ; (30,40) [4x+3y=240 ∩ 2x+y=100]: P = 9000 + 10000 = K19 000 ; (10, 66⅔) [x=10 ∩ 4x+3y=240]: P = 3000 + 16667 ≈ K19 667 ; Maximum is at the corner x = 10, 4x + 3y = 240; with whole furniture take y = 66",
+     "answer": "Best combination: 10 tables and 66 chairs"
+    },
+    {
+     "label": "(d)",
+     "solution": "P = 300(10) + 250(66) = 3000 + 16500 ; (Note in print: testing whole-number points along the assembling line, 12 tables and 64 chairs gives 4(12) + 3(64) = 240 and P = 3600 + 16000 = K19 600 — the highest exact whole-number profit; accept K19 500 / 10 tables & 66 chairs from the graph)",
+     "answer": "Maximum profit ≈ K19 500"
+    }
+   ]
+  }
+ },
+ "real-g12-math-2021-p2-internal": {
+  "1": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Factorise the denominator (difference of two squares): a² − 144 = (a − 12)(a + 12) ; (a − 12)/[(a − 12)(a + 12)]",
+     "answer": "1/(a + 12)"
+    },
+    {
+     "label": "(b)(i)",
+     "solution": "5 marbles (3 B, 2 W), no replacement ; P(WW) = 2/5 × 1/4 = 2/20",
+     "answer": "1/10"
+    },
+    {
+     "label": "(b)(ii)",
+     "solution": "P(different colours) = P(BW) + P(WB) ; = (3/5 × 2/4) + (2/5 × 3/4) = 6/20 + 6/20 = 12/20",
+     "answer": "3/5"
+    }
+   ]
+  },
+  "2": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Integrate term by term: ∫(1 − 4x + 3x²) dx = x − 2x² + x³ ; At x = 1: 1 − 2 + 1 = 0 ; At x = −1: −1 − 2 − 1 = −4 ; Value = 0 − (−4)",
+     "answer": "4"
+    },
+    {
+     "label": "(b)(i)",
+     "solution": "The pair totals include the centre 4 ; F∩G only = 9 − 4 = 5 ; F∩HE only = 12 − 4 = 8 ; G∩HE only = 15 − 4 = 11 ; Regions: F only 20, HE only 25, G only 22, F∩G only 5, F∩HE only 8, G∩HE only 11, all three 4",
+     "answer": "Venn diagram of three overlapping sets F, HE, G with F only 20, HE only 25, G only 22, F∩G only 5, F∩HE only 8, G∩HE only 11, all three 4"
+    },
+    {
+     "label": "(b)(ii)(a)",
+     "solution": "Sum of all regions = 20 + 25 + 22 + 5 + 8 + 11 + 4",
+     "answer": "95 learners"
+    },
+    {
+     "label": "(b)(ii)(b)",
+     "solution": "G∩HE only region",
+     "answer": "11 learners"
+    },
+    {
+     "label": "(b)(ii)(c)",
+     "solution": "(F∩G only) + (F∩HE only) + (G∩HE only) = 5 + 8 + 11",
+     "answer": "24 learners"
+    }
+   ]
+  },
+  "3": {
+   "parts": [
+    {
+     "label": "(a)(i)",
+     "solution": "ar = 16 and ar⁴ = 2 ; ar⁴/ar = r³ = 2/16 = 1/8 so r = 1/2 ; a = 16/r = 16 ÷ (1/2) = 32",
+     "answer": "r = 1/2, first term a = 32"
+    },
+    {
+     "label": "(a)(ii)",
+     "solution": "12th term = ar¹¹ = 32 × (1/2)¹¹ = 32/2048",
+     "answer": "T₁₂ = 1/64"
+    },
+    {
+     "label": "(a)(iii)",
+     "solution": "r < 1: S₁₀ = a(1 − r¹⁰)/(1 − r) = 32(1 − (1/2)¹⁰)/(1/2) ; = 64(1 − 1/1024) = 64 × 1023/1024",
+     "answer": "S₁₀ = 1023/16 ≈ 63.94"
+    },
+    {
+     "label": "(b)",
+     "solution": "Common denominator (1 − x)(x − 2) ; = [5(x − 2) − 3(1 − x)] / [(1 − x)(x − 2)] ; = [5x − 10 − 3 + 3x] / [(1 − x)(x − 2)]",
+     "answer": "(8x − 13)/[(1 − x)(x − 2)]"
+    }
+   ]
+  },
+  "4": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Quadratic formula, a = 2, b = −13, c = 14 ; x = [13 ± √(169 − 112)]/4 = [13 ± √57]/4 ; √57 = 7.54983 ; x = (13 + 7.54983)/4 or x = (13 − 7.54983)/4",
+     "answer": "x = 5.14 or x = 1.36"
+    },
+    {
+     "label": "(b)(i)",
+     "solution": "AB→ = OB→ − OA→ = 3b − 4a",
+     "answer": "AB→ = 3b − 4a"
+    },
+    {
+     "label": "(b)(ii)",
+     "solution": "OM→ = OA→ + ½AB→ = 4a + ½(3b − 4a) = 4a + 1.5b − 2a",
+     "answer": "OM→ = 2a + (3/2)b"
+    },
+    {
+     "label": "(b)(iii)",
+     "solution": "OB = 3BD with O, B, D in line, so BD→ = b and OD→ = 3b + b = 4b ; AD→ = OD→ − OA→ = 4b − 4a",
+     "answer": "AD→ = 4b − 4a"
+    },
+    {
+     "label": "(b)(iv)",
+     "solution": "MD→ = OD→ − OM→ = 4b − (2a + 1.5b)",
+     "answer": "MD→ = (5/2)b − 2a"
+    }
+   ]
+  },
+  "5": {
+   "parts": [
+    {
+     "label": "(a)(i)",
+     "solution": "det P = (1)(−x) − (2)(2) = −x − 4 ; −x − 4 = −3 so −x = 1",
+     "answer": "x = −1"
+    },
+    {
+     "label": "(a)(ii)",
+     "solution": "x = −1 so P = [[1,2],[2,1]], det = −3 ; P⁻¹ = (1/det)[[d, −b],[−c, a]] = (1/−3)[[1, −2],[−2, 1]]",
+     "answer": "P⁻¹ = (−1/3)[[1,−2],[−2,1]] = [[−1/3, 2/3],[2/3, −1/3]]"
+    },
+    {
+     "label": "(b)",
+     "solution": "Start ; Enter x ; If x < 0 THEN ; Print \"x must be positive\" ; Else ; r = R * cos x ; Display r ; End If ; Stop",
+     "answer": "Start; Enter x; If x < 0 THEN Print \"x must be positive\" Else r = R * cos x; Display r; End If; Stop"
+    }
+   ]
+  },
+  "6": {
+   "parts": [
+    {
+     "label": "(a)(i)",
+     "solution": "",
+     "answer": "Construction of the triangle with AB = 6 cm, BC = 9 cm, AC = 5 cm (no worked steps given in the solution column)"
+    },
+    {
+     "label": "(a)(ii)",
+     "solution": "cosine rule (AC opposite B): cos B = (AB² + BC² − AC²)/(2·AB·BC) = (36 + 81 − 25)/(2 × 6 × 9) = 92/108 = 0.8519",
+     "answer": "∠ABC ≈ 31.6° (accept your measured value ≈ 32°)"
+    },
+    {
+     "label": "(b)(i)",
+     "solution": "Equidistant from A and C: perpendicular bisector of AC",
+     "answer": "Perpendicular bisector of AC"
+    },
+    {
+     "label": "(b)(ii)",
+     "solution": "3 cm from A: arc of a circle, centre A, radius 3 cm",
+     "answer": "Arc of circle centre A, radius 3 cm"
+    },
+    {
+     "label": "(b)(iii)",
+     "solution": "Equidistant from AC and BC: bisector of angle C (∠ACB)",
+     "answer": "Bisector of angle ACB"
+    },
+    {
+     "label": "(c)",
+     "solution": "≤ 3 cm from A: inside the 3 cm arc of A ; nearer BC than AC: the BC-side of the angle-C bisector ; closer to A than C: the A-side of the perpendicular bisector of AC",
+     "answer": "Shade the overlap of these three regions inside triangle ABC"
+    }
+   ]
+  },
+  "7": {
+   "parts": [
+    {
+     "label": "(a)(i)",
+     "solution": "Q and R lie on the meridians 55°E and 60°W (opposite sides of 0°), so add: 60° + 55°",
+     "answer": "115° (note: as scanned, diagram labels put Q and R on the same meridian; the solution still gives 115°) [unclear]"
+    },
+    {
+     "label": "(a)(ii)",
+     "solution": "2πR cos 40° = 2 × 3.142 × 3437 × cos 40° ; = 21598 × 0.76604",
+     "answer": "≈ 16 545 nm"
+    },
+    {
+     "label": "(a)(iii)",
+     "solution": "TR = (115/360) × 2πR cos 40° = (115/360) × 16545",
+     "answer": "≈ 5285 nm"
+    },
+    {
+     "label": "(b)(i)",
+     "solution": "Base area πr² = 3850 so r² = 3850/3.142 = 1225 so r = 35 cm ; Volume = 1/3 × (base area) × h = 1/3 × 3850 × h = 34650 ; h = (34650 × 3)/3850 = 27 cm",
+     "answer": "r = 35 cm, h = 27 cm"
+    },
+    {
+     "label": "(b)(ii)",
+     "solution": "External radius = 35 + 0.7 = 35.7 cm ; external height = 27 + 0.7 = 27.7 cm ; V = 1/3 π(35.7²)(27.7) = 1/3 × 3.142 × 1274.49 × 27.7",
+     "answer": "≈ 36 970 cm³"
+    }
+   ]
+  },
+  "8": {
+   "parts": [
+    {
+     "label": "(a)(i)",
+     "solution": "[[1,−2],[0,1]](x, y) = (−2, 3) ; Row 2: y = 3 ; Row 1: x − 2y = −2 so x − 6 = −2 so x = 4",
+     "answer": "C = (4, 3)"
+    },
+    {
+     "label": "(a)(ii)",
+     "solution": "(x, y) → (x − 2y, y): the x-axis (y = 0) is unchanged; points move parallel to the x-axis by −2 per unit of y",
+     "answer": "Shear, x-axis (y = 0) invariant, shear factor −2"
+    },
+    {
+     "label": "(b)(i)",
+     "solution": "Matrix M = [[a,b],[c,d]] ; From Q: 2a = −4 so a = −2; 2c = 0 so c = 0 ; From R: b = 0, d = 1 ; Check P: M(2;2) = (−4; 2) ✓",
+     "answer": "M = [[−2, 0],[0, 1]]"
+    },
+    {
+     "label": "(b)(ii)",
+     "solution": "(x, y) → (−2x, y): the y-axis (x = 0) is invariant; x-distances scale by −2",
+     "answer": "One-way stretch parallel to the x-axis, factor −2, y-axis (x = 0) invariant"
+    },
+    {
+     "label": "(c)",
+     "solution": "F = [[k,0],[0,k]]: A(2,2) → (2k, 2k) = (5, 5) ; 2k = 5 so k = 5/2 ; check B(−2,4) → (−2k, 4k) = (−5, 10) ✓",
+     "answer": "k = 5/2 = 2.5"
+    }
+   ]
+  },
+  "9": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Room for up to 900: x + y ≤ 900 ; at least twice as many A as B: x ≥ 2y ; at least 100 of B: y ≥ 100 ; not more than 700 of A: x ≤ 700",
+     "answer": "x + y ≤ 900; x ≥ 2y; y ≥ 100; x ≤ 700"
+    },
+    {
+     "label": "(b)",
+     "solution": "Draw x + y = 900, x = 2y, y = 100, x = 700; shade OUT the unwanted side of each",
+     "answer": "Graph with lines x + y = 900, x = 2y, y = 100, x = 700 and unwanted regions shaded; wanted region is the quadrilateral with corners (200,100), (700,100), (700,200), (600,300)"
+    },
+    {
+     "label": "(c)(i)",
+     "solution": "Test corner points, P = 3x + 2y ; (200,100): P = 600 + 200 = K800 ; (700,100): P = 2100 + 200 = K2300 ; (600,300) [x + y = 900 ∩ x = 2y]: P = 1800 + 600 = K2400 ; (700,200) [x = 700 ∩ x + y = 900]: P = 2100 + 400 = K2500",
+     "answer": "Maximum at (700, 200): 700 bottles of A and 200 bottles of B"
+    },
+    {
+     "label": "(c)(ii)",
+     "solution": "P = 3(700) + 2(200) = 2100 + 400",
+     "answer": "K2500"
+    }
+   ]
+  },
+  "10": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Mid-values 5, 15, ..., 65; Σf = 700 ; Σfx = 150 + 1050 + 5000 + 7000 + 7200 + 1650 + 650 = 22700 ; Mean = 22700/700 = 32.43 ; Σfx² = 750 + 15750 + 125000 + 245000 + 324000 + 90750 + 42250 = 843500 ; SD = √(843500/700 − 32.43²) = √(1205.0 − 1051.6) = √153.4",
+     "answer": "SD ≈ 12.4 cm"
+    },
+    {
+     "label": "(b)(i)",
+     "solution": "Cumulative frequency: ≤0: 0, ≤10: 30, ≤20: 100, ≤30: 300, ≤40: 500, ≤50: 660, ≤60: 690, ≤70: 700 ; Relative CF (÷ 700): 0.00, 0.04, 0.14, 0.43, 0.71, 0.94, 0.99, 1.00",
+     "answer": "Relative cumulative frequency: 0.00, 0.04, 0.14, 0.43, 0.71, 0.94, 0.99, 1.00"
+    },
+    {
+     "label": "(b)(ii)",
+     "solution": "Plot the relative cumulative frequencies against the upper class boundaries and join with a smooth curve",
+     "answer": "Smooth relative cumulative frequency curve (graph)"
+    },
+    {
+     "label": "(b)(iii)",
+     "solution": "Relative cf = 0.80 lies between (40, 0.71) and (50, 0.94) ; x = 40 + ((0.80 − 0.71)/(0.94 − 0.71)) × 10 ≈ 40 + 3.8",
+     "answer": "80th percentile ≈ 43.8 cm (read from the graph)"
+    }
+   ]
+  },
+  "11": {
+   "parts": [
+    {
+     "label": "(a)(i)",
+     "solution": "r = value of y at x = −2 ; r = (−2)((−2)² − 4) = (−2)(4 − 4) = (−2)(0)",
+     "answer": "r = 0"
+    },
+    {
+     "label": "(a)(ii)",
+     "solution": "Plot (−3,−15), (−2,0), (−1,3), (0,0), (1,−3), (2,0), (3,15); smooth curve",
+     "answer": "Smooth cubic curve through the plotted points (graph)"
+    },
+    {
+     "label": "(a)(iii)(a)",
+     "solution": "x = 0 or x² = 4 so x = ±2 (where the curve crosses the x-axis)",
+     "answer": "x = −2, 0, 2"
+    },
+    {
+     "label": "(a)(iii)(b)",
+     "solution": "Draw the line y = 2 and read the intersections (x³ − 4x − 2 = 0)",
+     "answer": "x ≈ −1.7, x ≈ −0.5, x ≈ 2.2 (read from the graph)"
+    },
+    {
+     "label": "(b)",
+     "solution": "dy/dx = 2x − 1 ; at x = −1: gradient = −2 − 1 = −3 ; normal gradient = −1/(−3) = 1/3 ; y − 6 = (1/3)(x + 1)",
+     "answer": "x − 3y + 19 = 0 (i.e. y = (1/3)x + 19/3)"
+    }
+   ]
+  },
+  "12": {
+   "parts": [
+    {
+     "label": "(a)(i)",
+     "solution": "Cosine rule (opposite AC = 15.1): cos B = (AB² + BC² − AC²)/(2·AB·BC) ; = (132.25 + 51.84 − 228.01)/(2 × 11.5 × 7.2) = −43.92/165.6 = −0.2652",
+     "answer": "∠ABC ≈ 105.4°"
+    },
+    {
+     "label": "(a)(ii)",
+     "solution": "Area = ½·AB·BC·sin B = ½ × 11.5 × 7.2 × sin 105.4° = ½ × 82.8 × 0.9642",
+     "answer": "Area ≈ 39.9 m²"
+    },
+    {
+     "label": "(a)(iii)",
+     "solution": "Shortest distance is the perpendicular height h ; Area = ½ × AC × h so 39.92 = ½ × 15.1 × h ; h = 79.83/15.1",
+     "answer": "≈ 5.29 m"
+    },
+    {
+     "label": "(b)",
+     "solution": "15 tan θ = 14 so tan θ = 14/15 = 0.9333 ; reference angle = 43.0°; tan is positive in the 3rd quadrant (180°–270°) ; θ = 180° + 43.0°",
+     "answer": "θ = 223.0°"
+    },
+    {
+     "label": "(c)",
+     "solution": "= (39x³)/(28y⁴) × (56y⁵)/(65x⁵) ; Numbers: (39/65)(56/28) = (3/5)(2) = 6/5 ; Letters: x^(3−5) = x⁻²; y^(5−4) = y",
+     "answer": "6y/(5x²)"
+    }
+   ]
+  }
+ },
+ "real-g12-math-2021-p2-gce": {
+  "1": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Factorise the numerator (difference of two squares): a²x² − b²y² = (ax)² − (by)² = (ax − by)(ax + by) ; [(ax − by)(ax + by)] / (ax + by)",
+     "answer": "ax − by"
+    },
+    {
+     "label": "(b)(i)",
+     "solution": "a = 4, r = 2/4 = 1/2 ; 7th term = a r⁶ ; T₇ = 4 × (1/2)⁶ = 4 × 1/64",
+     "answer": "T₇ = 1/16"
+    },
+    {
+     "label": "(b)(ii)",
+     "solution": "Sum of first 9 terms (r < 1): S₉ = a(1 − r⁹)/(1 − r) = 4(1 − (1/2)⁹)/(1 − 1/2) ; = 8(1 − 1/512) = 8 × 511/512",
+     "answer": "S₉ = 511/64 ≈ 7.98"
+    },
+    {
+     "label": "(c)",
+     "solution": "GM = √(196 × 15 625) = √196 × √15 625 = 14 × 125",
+     "answer": "1750"
+    }
+   ]
+  },
+  "2": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Multiply through by x: 3x² + 5 = 12x ; 3x² − 12x + 5 = 0, a = 3, b = −12, c = 5 ; x = [12 ± √(144 − 60)]/6 = [12 ± √84]/6 ; √84 = 9.16515 ; x = (12 + 9.16515)/6 or x = (12 − 9.16515)/6",
+     "answer": "x = 3.53 or x = 0.47"
+    },
+    {
+     "label": "(b)(i)",
+     "solution": "10 balls: 5 G, 1 R, 4 B, no replacement ; First draw: P(G) = 5/10, P(R) = 1/10, P(B) = 4/10 ; Second draw uses 9 balls remaining, with one of that colour removed",
+     "answer": "Tree diagram with first-draw branches G 5/10, R 1/10, B 4/10 and second-draw branches out of 9 balls (e.g. after G: G 4/9, R 1/9, B 4/9)"
+    },
+    {
+     "label": "(b)(ii)",
+     "solution": "P(same colour) = P(GG) + P(RR) + P(BB) ; P(GG) = 5/10 × 4/9 = 20/90 ; P(RR) = 1/10 × 0/9 = 0 (only one red, impossible) ; P(BB) = 4/10 × 3/9 = 12/90 ; Total = (20 + 0 + 12)/90 = 32/90",
+     "answer": "16/45"
+    }
+   ]
+  },
+  "3": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Draw EF = 11 cm; with compasses mark arcs EG = 6.5 cm (from E) and GF = 10 cm (from F); their intersection is G. Join EG and GF.",
+     "answer": "Triangle EFG constructed"
+    },
+    {
+     "label": "(b)",
+     "solution": "Size of angle EGF (opposite EF) by cosine rule: cos G = (EG² + GF² − EF²)/(2·EG·GF) = (6.5² + 10² − 11²)/(2 × 6.5 × 10) = (42.25 + 100 − 121)/130 = 21.25/130 = 0.1635",
+     "answer": "∠EGF ≈ 80.6° (accept your measured value ≈ 81°)"
+    },
+    {
+     "label": "(c)(i)",
+     "solution": "Equidistant from EG and EF: the bisector of angle E (∠GEF)",
+     "answer": "Bisector of angle GEF"
+    },
+    {
+     "label": "(c)(ii)",
+     "solution": "2.5 cm from EF: a line parallel to EF, 2.5 cm from it (inside the triangle)",
+     "answer": "Line parallel to EF at 2.5 cm"
+    },
+    {
+     "label": "(c)(iii)",
+     "solution": "Equidistant from E and F: the perpendicular bisector of EF",
+     "answer": "Perpendicular bisector of EF"
+    },
+    {
+     "label": "(d)",
+     "solution": "Nearer EF than EG: the EF-side of the angle-E bisector ; Nearer E than F: the E-side of the perpendicular bisector of EF ; ≥ 2.5 cm from EF: beyond the parallel line (away from EF)",
+     "answer": "Shade where all three conditions overlap, inside triangle EFG"
+    }
+   ]
+  },
+  "4": {
+   "parts": [
+    {
+     "label": "(a)(i)",
+     "solution": "Work out the remaining regions: A only = 18, A∩B only = 7, A∩C only = 2, all three = 10 ; Check A: 18 + 7 + 2 + 10 = 37 ; B only = 28 − (7 + 5 + 10) = 6 ; C only = 29 − (2 + 5 + 10) = 12 ; Inside: 18 + 7 + 2 + 6 + 5 + 12 + 10 = 60, so none = 60 − 60 = 0",
+     "answer": "Venn diagram: A only 18, B only 6, C only 12, A∩B only 7, A∩C only 2, B∩C only 5, A∩B∩C 10, outside 0"
+    },
+    {
+     "label": "(a)(ii)(a)",
+     "solution": "n(B′) = not in B = 60 − n(B) = 60 − 28",
+     "answer": "32"
+    },
+    {
+     "label": "(a)(ii)(b)",
+     "solution": "n(A∩B) = (A∩B only) + (all three) = 7 + 10 = 17 ; n((A∩B)′) = 60 − 17",
+     "answer": "43"
+    },
+    {
+     "label": "(a)(ii)(c)",
+     "solution": "n(A∪B) = 37 + 28 − 17 = 48 ; n((A∪B)′) = 60 − 48 = 12 (= C only + none = 12 + 0)",
+     "answer": "12"
+    },
+    {
+     "label": "(b)(i)",
+     "solution": "det A = (2x − 1)(−2) − (1)(4) = −4x + 2 − 4 = −4x − 2 ; −4x − 2 = −10 ⇒ −4x = −8",
+     "answer": "x = 2"
+    },
+    {
+     "label": "(b)(ii)",
+     "solution": "With x = 2, A = [[3,1],[4,−2]], det = −10 ; A⁻¹ = (1/det)[[d, −b],[−c, a]] = (1/−10)[[−2, −1],[−4, 3]]",
+     "answer": "A⁻¹ = (1/10)[[2,1],[4,−3]] = [[0.2,0.1],[0.4,−0.3]]"
+    }
+   ]
+  },
+  "5": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "dy/dx = 15x² − 14x + 3 ; At x = 1: gradient = 15 − 14 + 3 = 4 ; Tangent through (1, 3): y − 3 = 4(x − 1)",
+     "answer": "y = 4x − 1"
+    },
+    {
+     "label": "(b)(i)(a)",
+     "solution": "BA→ = OA→ − OB→ = a − b",
+     "answer": "BA→ = a − b"
+    },
+    {
+     "label": "(b)(i)(b)",
+     "solution": "AX→ = ½AB→ = ½(OB→ − OA→) = ½(b − a)",
+     "answer": "AX→ = ½(b − a)"
+    },
+    {
+     "label": "(b)(i)(c)",
+     "solution": "OX→ = OA→ + AX→ = a + ½(b − a) = ½a + ½b",
+     "answer": "OX→ = ½(a + b)"
+    },
+    {
+     "label": "(b)(ii)",
+     "solution": "BC→ = OC→ − OB→ = 3a − b",
+     "answer": "BC→ = 3a − b"
+    }
+   ]
+  },
+  "6": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Common denominator (2x − 1)(3x − 1) ; = [2(3x − 1) − 3(2x − 1)] / [(2x − 1)(3x − 1)] ; = [6x − 2 − 6x + 3] / [(2x − 1)(3x − 1)]",
+     "answer": "1 / [(2x − 1)(3x − 1)]"
+    },
+    {
+     "label": "(b)",
+     "solution": "Start (terminator/oval) ; Enter length (input parallelogram) ; Decision: Is length < 0? Yes -> output 'length must be positive' -> go to Stop; No -> continue ; Enter height (input parallelogram) ; Decision: Is height < 0? Yes -> output 'height must be positive' -> go to Stop; No -> continue ; Volume = (1/3) * length^3 * height (process box) ; Display Volume (output parallelogram) ; Stop (terminator/oval)",
+     "answer": "Flowchart as described: Start, input length, decision length<0, input height, decision height<0, process volume, display volume, Stop"
+    }
+   ]
+  },
+  "7": {
+   "parts": [
+    {
+     "label": "(a)(i)",
+     "solution": "Angle BAC is opposite BC (300), cosine rule: cos A = (AB² + AC² − BC²)/(2·AB·AC) ; = (275² + 45² − 300²)/(2 × 275 × 45) ; = (75625 + 2025 − 90000)/24750 = −12350/24750 = −0.4990",
+     "answer": "∠BAC ≈ 119.9°"
+    },
+    {
+     "label": "(a)(ii)",
+     "solution": "Area = ½·AB·AC·sin A ; = ½ × 275 × 45 × sin 119.9° = ½ × 12375 × 0.8666",
+     "answer": "Area ≈ 5360 m²"
+    },
+    {
+     "label": "(a)(iii)",
+     "solution": "Shortest distance is the perpendicular height h: Area = ½ × BC × h ⇒ 5362 = ½ × 300 × h ; h = 10724/300",
+     "answer": "≈ 35.7 m"
+    },
+    {
+     "label": "(b)",
+     "solution": "Reference angle 60°; cosine negative in the 3rd quadrant within this range ; θ = 360° − 120° = 240° (120° is outside the range)",
+     "answer": "θ = 240°"
+    },
+    {
+     "label": "(c)",
+     "solution": "Multiply by the reciprocal of the divisor: (18a²b)/(16c³d²) × (15cb³)/(24a) × (8c²d³)/(30a³b) ; Numbers: (18×15×8)/(16×24×30) = 2160/11520 = 3/16 ; Letters: a^(2−1−3) b^(1+3−1) c^(−3+1+2) d^(−2+3) = a⁻² b³ c⁰ d",
+     "answer": "3b³d / (16a²)"
+    }
+   ]
+  },
+  "8": {
+   "parts": [
+    {
+     "label": "(a)(i)(a)",
+     "solution": "Draw the line y = 1 and read where it cuts the curve ; (Algebra check: x³ − 12x − 5 = 0)",
+     "answer": "x ≈ −3.3, x ≈ −0.4, x ≈ 3.7 (read from the graph)"
+    },
+    {
+     "label": "(a)(i)(b)",
+     "solution": "Draw the line y = −2 and read the intersections ; (Algebra check: x³ − 12x + 10 = 0)",
+     "answer": "x ≈ −3.8, x ≈ 0.9, x ≈ 2.9 (read from the graph)"
+    },
+    {
+     "label": "(a)(ii)(a)",
+     "solution": "y = −(1/5)(12x − x³) = −(12/5)x + (1/5)x³ ; ∫y dx = −(6/5)x² + (1/20)x⁴ ; At x = −1: −1.2 + 0.05 = −1.15; at x = −3: −10.8 + 4.05 = −6.75 ; Area = (−1.15) − (−6.75) = 5.6 (curve is above the x-axis here)",
+     "answer": "Area ≈ 5.6 square units"
+    },
+    {
+     "label": "(a)(ii)(b)",
+     "solution": "dy/dx = −(1/5)(12 − 3x²) = −12/5 + (3/5)x² ; At x = 3: −2.4 + (3/5)(9) = −2.4 + 5.4",
+     "answer": "Gradient = 3 (draw the tangent at (3, −1.8) to confirm)"
+    },
+    {
+     "label": "(b)",
+     "solution": "y = ∫(2x − 3) dx = x² − 3x + C ; At (3, 3): 9 − 9 + C = 3 ⇒ C = 3",
+     "answer": "y = x² − 3x + 3"
+    }
+   ]
+  },
+  "9": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Mid-values 5, 15, 25, …, 75; Σf = 60 ; Σfx = 10 + 90 + 250 + 525 + 540 + 440 + 260 + 225 = 2340 ; Mean = 2340/60 = 39 ; Σfx² = 50 + 1350 + 6250 + 18375 + 24300 + 24200 + 16900 + 16875 = 108300 ; SD = √(Σfx²/Σf − mean²) = √(1805 − 1521) = √284",
+     "answer": "SD ≈ 16.9"
+    },
+    {
+     "label": "(b)(i)",
+     "solution": "Cumulative frequency (≤ upper boundary): ≤0: 0, ≤10: 2, ≤20: 8, ≤30: 18, ≤40: 33, ≤50: 45, ≤60: 53, ≤70: 57, ≤80: 60",
+     "answer": "≤60: 53, ≤70: 57, ≤80: 60"
+    },
+    {
+     "label": "(b)(ii)",
+     "solution": "Plot (10,2), (20,8), (30,18), (40,33), (50,45), (60,53), (70,57), (80,60); join with a smooth ogive",
+     "answer": "Smooth cumulative frequency curve (ogive)"
+    },
+    {
+     "label": "(b)(iii)",
+     "solution": "n = 60; Q1 at 15th value: in 20 < x ≤ 30, Q1 = 20 + ((15 − 8)/10) × 10 ≈ 27 ; Q3 at 45th value: in 40 < x ≤ 50, Q3 = 40 + ((45 − 33)/12) × 10 ≈ 50",
+     "answer": "IQR = Q3 − Q1 ≈ 50 − 27 ≈ 23 (read from the graph)"
+    }
+   ]
+  },
+  "10": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "At least 60 sedans: x ≥ 60 ; At least 20 vans: y ≥ 20 ; At most 180 vehicles: x + y ≤ 180 ; Vans not more than sedans: y ≤ x",
+     "answer": "x ≥ 60, y ≥ 20, x + y ≤ 180, y ≤ x"
+    },
+    {
+     "label": "(b)",
+     "solution": "Draw x = 60, y = 20, x + y = 180, y = x; shade OUT the unwanted side of each, leaving the feasible region clear",
+     "answer": "Graph with the feasible region left unshaded"
+    },
+    {
+     "label": "(c)",
+     "solution": "Test corner points, P = 10000x + 12000y ; (60, 20): P = 600000 + 240000 = K840 000 ; (60, 60): P = 600000 + 720000 = K1 320 000 ; (160, 20): P = 1600000 + 240000 = K1 840 000 ; (90, 90) [y = x and x + y = 180]: P = 900000 + 1080000 = K1 980 000",
+     "answer": "Maximum at (90, 90): 90 sedans and 90 vans"
+    },
+    {
+     "label": "(d)",
+     "solution": "P = 10000(90) + 12000(90) = 900000 + 1080000",
+     "answer": "K1 980 000"
+    }
+   ]
+  },
+  "11": {
+   "parts": [
+    {
+     "label": "(a)",
+     "solution": "Use 2 cm = 10 units on each axis (0 to 70). Plot and join both triangles",
+     "answer": "Triangles ABC and A₁B₁C₁ drawn and labelled"
+    },
+    {
+     "label": "(b)",
+     "solution": "A(40,30)→A₁(20,15); B(40,70)→B₁(20,35); C(70,70)→C₁(35,35) ; Each coordinate is halved: A₁ = ½A, B₁ = ½B, C₁ = ½C",
+     "answer": "Enlargement, centre (0, 0), scale factor ½"
+    },
+    {
+     "label": "(c)",
+     "solution": "Rotation 180° about (20, 40): (x, y) → (40 − x, 80 − y) ; A₁(20,15) → (40 − 20, 80 − 15) = (20, 65) ; B₁(20,35) → (40 − 20, 80 − 35) = (20, 45) ; C₁(35,35) → (40 − 35, 80 − 35) = (5, 45)",
+     "answer": "A₂(20, 65), B₂(20, 45), C₂(5, 45)"
+    },
+    {
+     "label": "(d)(i)",
+     "solution": "Plot A₃(40,15), B₃(40,35), C₃(70,35) and join",
+     "answer": "Triangle A₃B₃C₃ drawn and labelled"
+    },
+    {
+     "label": "(d)(ii)",
+     "solution": "A₁(20,15)→A₃(40,15); B₁(20,35)→B₃(40,35); C₁(35,35)→C₃(70,35) ; The y-coordinate is unchanged; the x-coordinate is doubled (x → 2x)",
+     "answer": "One-way stretch, scale factor 2, parallel to the x-axis, y-axis (x = 0) invariant. Matrix [[2,0],[0,1]]"
+    }
+   ]
+  },
+  "12": {
+   "parts": [
+    {
+     "label": "(a)(i)",
+     "solution": "A and B lie on the two meridians shown (through C and D); their longitude difference equals the marked angle between those meridians",
+     "answer": "85°"
+    },
+    {
+     "label": "(a)(ii)(a)",
+     "solution": "Arc angle = 85° (longitude difference). On the equator 1° = 60 nm, so distance = 85 × 60 ; (or (85/360) × 2 × 3.142 × 3437 ≈ 5100 nm)",
+     "answer": "≈ 5100 nm"
+    },
+    {
+     "label": "(a)(ii)(b)",
+     "solution": "B at 52°N, D on the equator; arc angle = 52° along the same meridian ; Distance = (52/360) × 2πR = (52/360) × 2 × 3.142 × 6370 = (52/360) × 40028.8",
+     "answer": "≈ 5780 km"
+    },
+    {
+     "label": "(b)",
+     "solution": "Restore the full cone: top radius : bottom radius = 1.5 : 5. If full height = H: (H − 7)/H = 1.5/5 ; 5(H − 7) = 1.5H ⇒ 3.5H = 35 ⇒ H = 10; small cone height = 3 cm ; V = ⅓π(5² × 10 − 1.5² × 3) = ⅓π(250 − 6.75) = ⅓π(243.25) = ⅓ × 3.142 × 243.25 ; (Check: V = ⅓πh(R² + Rr + r²) = ⅓(3.142)(7)(25 + 7.5 + 2.25) = 254.8 cm³)",
+     "answer": "Volume ≈ 254.8 cm³"
+    }
+   ]
+  }
+ }
+}

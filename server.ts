@@ -29,6 +29,22 @@ import {
   type NationwideCompetition,
 } from "./src/data/competitions.ts";
 import { speakableMath, tidyDeep, tidyMath } from "./src/utils/mathText.ts";
+import { REAL_PAPER_QUESTIONS } from "./src/data/realPaperQuestions.ts";
+
+// Hidden worked solutions for the real past papers (server only, never sent to learners).
+const PAPER_SOLUTIONS: Record<
+  string,
+  Record<string, { parts: Array<{ label: string; solution: string; answer: string }> }>
+> = (() => {
+  try {
+    return JSON.parse(
+      fs.readFileSync(path.resolve("paper-data/paper-solutions.json"), "utf8")
+    );
+  } catch (err) {
+    console.warn("paper-data/paper-solutions.json not loaded:", err);
+    return {};
+  }
+})();
 import {
   recordGeminiResponse,
   recordLiveSeconds,
@@ -814,6 +830,122 @@ async function startServer() {
       } else {
         console.error("Error in /api/tutor/chat:", err);
       }
+      res.status(status).json({ error: formatErrorMessage(err) });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // Guided past-paper question: the tutor coaches the learner one small step at a time.
+  // The worked solution is loaded here on the server and is NEVER sent to the learner.
+  // ---------------------------------------------------------------------------
+  app.post("/api/tutor/paper-step", async (req, res) => {
+    try {
+      const body = req.body as {
+        tutorId?: string;
+        profile?: LearnerProfile;
+        paperId?: string;
+        number?: string;
+        partLabel?: string;
+        history?: Array<{ role: "learner" | "tutor"; text: string }>;
+        message?: string;
+      };
+      const paperId = String(body.paperId ?? "");
+      const number = String(body.number ?? "");
+      const questions = REAL_PAPER_QUESTIONS[paperId];
+      const q = questions?.find((x) => x.number === number);
+      const hidden = PAPER_SOLUTIONS[paperId]?.[number];
+      if (!q || !hidden || !body.profile) {
+        res.status(400).json({ error: "That question could not be found." });
+        return;
+      }
+      const wantedPart = String(body.partLabel ?? "");
+      const parts = wantedPart ? q.parts.filter((p) => p.label === wantedPart) : q.parts;
+      const solutionParts = wantedPart
+        ? hidden.parts.filter((p) => p.label === wantedPart)
+        : hidden.parts;
+      if (parts.length === 0) {
+        res.status(400).json({ error: "That part of the question could not be found." });
+        return;
+      }
+
+      const ai = getAiClient();
+      const tutor = getTutorById(String(body.tutorId ?? ""));
+      const profile = body.profile;
+      const first = (profile.name || "Learner").trim().split(/\s+/)[0];
+
+      const questionText = [
+        `Question ${q.number}${wantedPart ? ` ${wantedPart}` : ""}`,
+        q.stem,
+        q.diagram ? `Diagram (described in words, the learner may see it on the printed paper): ${q.diagram}` : "",
+        ...parts.map((p) => `${p.label} ${p.question}${p.marks ? ` [${p.marks} marks]` : ""}`),
+      ]
+        .filter(Boolean)
+        .join("\n");
+      const hiddenText = solutionParts
+        .map((p) => `${p.label} Method: ${p.solution} | Final answer: ${p.answer}`)
+        .join("\n");
+
+      const historyText = (body.history ?? [])
+        .slice(-12)
+        .map((m) => `${m.role === "learner" ? first : tutor.name}: ${String(m.text).slice(0, 600)}`)
+        .join("\n");
+      const message = String(body.message ?? "").slice(0, 800).trim();
+      const isStart = !message || message === "__start__";
+
+      const prompt = [
+        "ECZ PAST PAPER QUESTION THE LEARNER HAS CHOSEN:",
+        questionText,
+        "",
+        "HIDDEN TEACHER NOTES (for your eyes only; they come from a third-party copy and may contain mistakes, so check them with your own maths):",
+        hiddenText,
+        "",
+        historyText ? `Conversation so far:\n${historyText}` : "",
+        isStart
+          ? `${first} has just chosen this question. Begin the guided lesson.`
+          : `${first} just said: "${message}"`,
+        "",
+        "COACHING RULES (follow strictly):",
+        "1. Guide the learner to solve it THEMSELVES, one small step at a time. Never show the worked solution, the full method, or the final answer. Never list several steps at once.",
+        "2. Each reply: explain only the idea needed for the next step in very simple English (2 to 4 short sentences), then ask ONE small question for the learner to try on their work pad. Then stop and wait.",
+        "3. If they answer correctly: say so in a few words and move to the next step. If wrong: do not give the answer; point gently to where the thinking went wrong and ask again in an easier way.",
+        '4. If they say "Back" or "go back", explain the previous step again more simply. If they say they understand or ask to proceed, move on to the next step. If they ask for a hint, give a small hint only.',
+        "5. If they are still stuck after two tries on the same step, you may show that ONE step only (never later steps), then ask them to try it.",
+        '6. Set finished to true only when the learner has reached the final answer themselves. Then in "reply" confirm their answer, say what they learned in one sentence, and give one ECZ exam tip (for example show every step, write the formula first, include units).',
+        "7. If the teacher notes disagree with your own working, trust correct mathematics and tell the learner to check with their teacher. If the question needs a picture you cannot describe well, say so honestly.",
+        "8. Keep the reply under 80 words. Plain text only, no markdown symbols. Write maths in simple notation (÷, ×, x², √, fractions like 3/4).",
+        "Return JSON with: reply (string) and finished (true or false).",
+      ]
+        .filter((l) => l !== undefined)
+        .join("\n");
+
+      const response = await generateFast(
+        ai,
+        {
+          contents: prompt,
+          config: {
+            systemInstruction: buildTutorSystemInstruction(tutor, profile, null),
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                reply: { type: Type.STRING },
+                finished: { type: Type.BOOLEAN },
+              },
+              required: ["reply", "finished"],
+            },
+          },
+        },
+        500
+      );
+      const parsed = tidyDeep(JSON.parse((response.text ?? "{}").trim())) as {
+        reply?: string;
+        finished?: boolean;
+      };
+      if (!parsed.reply) throw new Error("The tutor could not reply. Please try again.");
+      res.json({ reply: parsed.reply, finished: parsed.finished === true });
+    } catch (err) {
+      const status = getHttpStatusForError(err);
+      if (status !== 429 && status !== 503) console.error("Error in /api/tutor/paper-step:", err);
       res.status(status).json({ error: formatErrorMessage(err) });
     }
   });

@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { PaperGuidedTutor, hasGuidedQuestions } from "./PaperGuidedTutor";
+import type { LearnerProfile } from "../data/curriculum";
 import {
   AlertCircle,
   ArrowLeft,
@@ -36,6 +38,9 @@ function isSmallScreen(): boolean {
 }
 
 interface PastPapersPanelProps {
+  profile: LearnerProfile;
+  tutorId: string;
+  tutorName: string;
   defaultGrade: GradeLevel;
   wingMode?: "school" | "alevel";
   onRecordQuizAnswer: (isCorrect: boolean, questionObj?: QuizQuestion) => void;
@@ -120,7 +125,7 @@ function matchesSubjectGroup(subject: string, group: SubjectGroup): boolean {
   );
 }
 
-export function PastPapersPanel({
+export function PastPapersPanel({ profile, tutorId, tutorName,
   defaultGrade,
   wingMode = "school",
   onRecordQuizAnswer,
@@ -304,7 +309,7 @@ export function PastPapersPanel({
               </p>
             </div>
 
-            {activePaper.pdfUrl && (
+            {activePaper.pdfUrl && !hasGuidedQuestions(activePaper.id) && (
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <button
                   type="button"
@@ -357,7 +362,7 @@ export function PastPapersPanel({
           </div>
         </div>
 
-        {showPdfViewer && activePaper.pdfUrl && (
+        {showPdfViewer && activePaper.pdfUrl && !hasGuidedQuestions(activePaper.id) && (
           <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-100 shadow-xs">
             <div className="px-4 py-2.5 bg-slate-900 text-slate-100 flex items-center justify-between text-xs">
               <span className="font-medium">
@@ -387,11 +392,13 @@ export function PastPapersPanel({
           </div>
         )}
 
-        {activePaper.questions.length === 0 && (
-          <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700 leading-relaxed">
-            Read the questions and worked solutions in the paper above. Try each question on your
-            work pad first, then check the solution. Ask your tutor about any step you do not understand.
-          </p>
+        {hasGuidedQuestions(activePaper.id) && (
+          <PaperGuidedTutor
+            paperId={activePaper.id}
+            profile={profile}
+            tutorId={tutorId}
+            tutorName={tutorName}
+          />
         )}
 
         <div className="space-y-4">

@@ -47,9 +47,8 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     durationMinutes: 0,
     totalMarks: 0,
     tutorId: "chanda",
-    sourceLabel: "Copy of the 2020 GCE paper with worked solutions (via ZEDPastPapers). Solutions are not the official ECZ marking scheme.",
+    sourceLabel: "Real 2020 GCE paper. Guided by your tutor; the hidden hints come from a third-party copy, not the official ECZ marking scheme.",
     verified: true,
-    pdfUrl: "/papers/ecz-g12-math-2020-p1-gce.pdf",
     questions: [],
   },
   {
@@ -63,9 +62,8 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     durationMinutes: 0,
     totalMarks: 0,
     tutorId: "chanda",
-    sourceLabel: "Copy of the 2020 paper with worked solutions (via ZEDPastPapers). Solutions are not the official ECZ marking scheme.",
+    sourceLabel: "Real 2020 paper. Guided by your tutor; the hidden hints come from a third-party copy, not the official ECZ marking scheme.",
     verified: true,
-    pdfUrl: "/papers/ecz-g12-math-2020-p2.pdf",
     questions: [],
   },
   {
@@ -79,9 +77,8 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     durationMinutes: 0,
     totalMarks: 0,
     tutorId: "chanda",
-    sourceLabel: "Copy of the 2021 internal paper with worked solutions (via ZEDPastPapers). Solutions are not the official ECZ marking scheme.",
+    sourceLabel: "Real 2021 internal paper. Guided by your tutor; the hidden hints come from a third-party copy, not the official ECZ marking scheme.",
     verified: true,
-    pdfUrl: "/papers/ecz-g12-math-2021-p2-internal.pdf",
     questions: [],
   },
   {
@@ -95,9 +92,8 @@ export const ECZ_PAST_PAPERS: EczPastPaper[] = [
     durationMinutes: 0,
     totalMarks: 0,
     tutorId: "chanda",
-    sourceLabel: "Copy of the 2021 GCE paper with worked solutions (via ZEDPastPapers). Solutions are not the official ECZ marking scheme.",
+    sourceLabel: "Real 2021 GCE paper. Guided by your tutor; the hidden hints come from a third-party copy, not the official ECZ marking scheme.",
     verified: true,
-    pdfUrl: "/papers/ecz-g12-math-2021-p2-gce.pdf",
     questions: [],
   },
 

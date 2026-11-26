@@ -2281,6 +2281,9 @@ export default function App() {
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
               <PastPapersPanel
+                profile={effectiveProfile}
+                tutorId={activeTutor.id}
+                tutorName={activeTutor.name}
                 defaultGrade={
                   effectiveProfile.grade === "A-Level"
                     ? "A-Level"
