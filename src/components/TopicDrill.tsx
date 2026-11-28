@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, BadgeCheck, CheckCircle2, Loader2, Target, Trophy } from "lucide-react";
 import { ECZ_TOPICS, type LearnerProfile, type SyllabusTopic } from "../data/curriculum";
 import { readJsonLoose } from "../utils/readJson";
+import { SymbolBar } from "./SymbolBar";
 
 const MASTERY_KEY = "kasukulu_topic_mastery_v1";
 const PASSES_NEEDED = 3;
@@ -281,8 +282,10 @@ function DrillSession({
           <label htmlFor="drill-answer" className="text-xs font-semibold text-slate-700">
             Write your working and answers. Put each step on a new line.
           </label>
+          <SymbolBar subject={topic.subject} />
           <textarea
             id="drill-answer"
+            data-answer-field="true"
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             rows={6}

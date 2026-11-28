@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { readJsonLoose } from "../utils/readJson";
 import { OfflineLessonsCard } from "./OfflineLessonsCard";
+import { SymbolBar } from "./SymbolBar";
 import {
   AlertCircle,
   ArrowRight,
@@ -291,7 +292,18 @@ export function LessonPanel({
     }
   };
 
+  const lessonAbort = useRef<AbortController | null>(null);
+
+  const cancelLesson = () => {
+    lessonAbort.current?.abort();
+    lessonAbort.current = null;
+    setPhase("idle");
+    setNotice("Lesson cancelled. You can start again when you are ready.");
+  };
+
   const startLesson = async () => {
+    const controller = new AbortController();
+    lessonAbort.current = controller;
     setPhase("loading");
     setError(null);
     setNotice(null);
@@ -313,6 +325,7 @@ export function LessonPanel({
     try {
       const res = await fetch("/api/tutor/lesson", {
         method: "POST",
+        signal: controller.signal,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tutorId: tutor.id,
@@ -327,6 +340,7 @@ export function LessonPanel({
           data?.error || "The lesson could not be prepared. Please try again."
         );
       }
+      if (controller.signal.aborted) return;
       const ready: Lesson = {
         ...data,
         mcq: (data.mcq as QuizQuestion[]).map(shuffleQuestion),
@@ -335,6 +349,7 @@ export function LessonPanel({
       setLessonKey(storageKey);
       setPhase("reading");
     } catch (err) {
+      if (controller.signal.aborted) return; // the learner cancelled
       const offlineCopy = readSaved(storageKey);
       if (offlineCopy) {
         openSaved(offlineCopy, false);
@@ -518,6 +533,15 @@ export function LessonPanel({
               Choose another topic
             </button>
           </div>
+          {phase === "loading" && (
+            <button
+              type="button"
+              onClick={cancelLesson}
+              className="px-4 py-2.5 rounded-xl border border-red-300 bg-white text-red-800 text-xs font-semibold hover:bg-red-50 min-h-[44px] cursor-pointer"
+            >
+              Cancel lesson
+            </button>
+          )}
           {phase === "loading" && (
             <p className="text-xs text-slate-500">
               Your lesson takes up to a minute to prepare. Please wait.
@@ -938,8 +962,10 @@ export function LessonPanel({
               <label htmlFor={`written-${wi}`} className="sr-only">
                 Your answer to question B{wi + 1}
               </label>
+              <SymbolBar subject={profile.grade} />
               <textarea
                 id={`written-${wi}`}
+                data-answer-field="true"
                 value={writtenAnswers[wi] ?? ""}
                 onChange={(e) => {
                   setWrittenAnswers((prev) => ({ ...prev, [wi]: e.target.value }));

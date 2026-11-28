@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { calculate, type AngleMode } from "../utils/calcEngine";
+import { insertIntoAnswerField, installAnswerFieldTracking } from "../utils/answerField";
 
 type Key = { label: string; insert?: string; action?: string; wide?: boolean; tone?: "num" | "op" | "fn" | "eq" | "clear" };
 
@@ -73,6 +74,11 @@ export function Calculator({ compact = false }: { compact?: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<Array<{ e: string; r: string }>>([]);
   const boxRef = useRef<HTMLDivElement>(null);
+  const [note, setNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    installAnswerFieldTracking();
+  }, []);
 
   const live = expr ? calculate(expr, mode, ans) : null;
 
@@ -203,6 +209,27 @@ export function Calculator({ compact = false }: { compact?: boolean }) {
           </button>
         ))}
       </div>
+
+      {shown !== null && (
+        <div className="space-y-1">
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              const text = shown.replace("×10^", "E");
+              setNote(insertIntoAnswerField(text) ? `${shown} added to your answer pad.` : "Tap inside your answer box first, then press this button.");
+            }}
+            className="w-full min-h-[44px] rounded-lg border border-emerald-700 bg-white text-emerald-800 text-sm font-semibold hover:bg-emerald-50 cursor-pointer"
+          >
+            Put {shown} in my answer pad
+          </button>
+          {note && (
+            <p role="status" className="text-[11px] text-slate-600">
+              {note}
+            </p>
+          )}
+        </div>
+      )}
 
       {history.length > 0 && (
         <div className="space-y-1">

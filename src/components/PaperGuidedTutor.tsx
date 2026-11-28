@@ -3,6 +3,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Lightbulb, Loader2, Send, Sparkle
 import type { LearnerProfile } from "../data/curriculum";
 import { REAL_PAPER_QUESTIONS, type PaperQuestion } from "../data/realPaperQuestions";
 import { readJsonLoose } from "../utils/readJson";
+import { SymbolBar } from "./SymbolBar";
 
 interface Props {
   paperId: string;
@@ -286,6 +287,7 @@ function GuidedSession({
               <Lightbulb className="w-4 h-4" /> Hint
             </button>
           </div>
+          <SymbolBar subject="Mathematics" />
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -294,6 +296,7 @@ function GuidedSession({
             className="flex items-center gap-2"
           >
             <input
+              data-answer-field="true"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your answer or question"

@@ -2735,6 +2735,7 @@ export default function App() {
 
               <input
                 type="text"
+                data-answer-field="true"
                 value={textInput}
                 onChange={(e) => setTextInput(e.target.value)}
                 placeholder={

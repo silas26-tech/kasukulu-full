@@ -8,6 +8,7 @@ import {
   Space,
   Trash2,
 } from "lucide-react";
+import { SymbolBar } from "./SymbolBar";
 
 interface WrittenAnswerPadProps {
   subjectLabel: string;
@@ -218,10 +219,13 @@ export function WrittenAnswerPad({
         </div>
       )}
 
+      <SymbolBar subject={subjectLabel} />
+
       {/* Notebook-lined Answer Area */}
       <div className="rounded-xl border border-slate-300 bg-white overflow-hidden shadow-2xs focus-within:border-emerald-700 focus-within:ring-2 focus-within:ring-emerald-600/20">
         <textarea
           ref={textareaRef}
+          data-answer-field="true"
           value={answerText}
           onChange={(e) => {
             setAnswerText(e.target.value);
