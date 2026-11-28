@@ -21,6 +21,7 @@ import {
   Volume2,
   XCircle,
   Zap,
+  Calculator as CalculatorIcon,
 } from "lucide-react";
 import {
   A_LEVEL_TOPICS,
@@ -44,10 +45,13 @@ import { StudyFlashcards } from "./StudyFlashcards";
 import { LessonPanel } from "./LessonPanel";
 import { ExamPanel } from "./ExamPanel";
 import { TopicDrill } from "./TopicDrill";
+import { Calculator } from "./Calculator";
+import { subjectUsesCalculator } from "../data/calculatorSubjects";
 import type { Challenge } from "../utils/challenge";
 import { StudyWeaknessesPanel } from "./StudyWeaknessesPanel";
 
 export type StudyTab =
+  | "calculator"
   | "blackboard"
   | "pad"
   | "papers"
@@ -241,6 +245,11 @@ export function RightStudyPanel({
       ? Math.round((progress.quizCorrect / progress.quizAnswered) * 100)
       : 0;
 
+  const usesCalculator = subjectUsesCalculator(
+    blackboard?.subject ?? activeTopic?.subject ?? tutor.subjectFocus
+  );
+  const [padCalcOpen, setPadCalcOpen] = useState(false);
+
   const isBoardAndPadActive =
     activeTab === "blackboard" || activeTab === "pad";
 
@@ -265,6 +274,9 @@ export function RightStudyPanel({
                 icon: Presentation,
               },
               { id: "lesson", label: "Lesson", icon: GraduationCap },
+              ...(usesCalculator
+                ? [{ id: "calculator" as const, label: "Calculator", icon: CalculatorIcon }]
+                : []),
               { id: "topics", label: "Topics", icon: Compass },
               { id: "quiz", label: "Quiz", icon: CheckSquare },
               { id: "progress", label: "Progress", icon: BarChart3 },
@@ -600,14 +612,40 @@ export function RightStudyPanel({
                   }}
                 />
               ) : (
+                <div className="space-y-3">
+                {usesCalculator && (
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => setPadCalcOpen((v) => !v)}
+                      aria-expanded={padCalcOpen}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-800 text-xs font-semibold hover:bg-slate-50 min-h-[40px] cursor-pointer"
+                    >
+                      <CalculatorIcon className="w-4 h-4" />
+                      {padCalcOpen ? "Hide calculator" : "Open calculator"}
+                    </button>
+                    {padCalcOpen && <Calculator compact />}
+                  </div>
+                )}
                 <WritingPad
                   onSendToTutor={onSendPadToTutor}
                   sendingToTutor={sendingPadToTutor}
                   liveCallActive={liveCallActive}
                   onOpenSnapModal={onOpenSnapModal}
                 />
+                </div>
               )}
             </div>
+          </div>
+        )}
+
+        {activeTab === "calculator" && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-bold text-slate-900">Calculator</h2>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              For subjects that allow a calculator. In papers marked "No Calculator" (such as Mathematics Paper 1), do the working by hand.
+            </p>
+            <Calculator />
           </div>
         )}
 
