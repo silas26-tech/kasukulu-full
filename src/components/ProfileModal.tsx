@@ -32,6 +32,9 @@ const GRADES: GradeLevel[] = [
   "Grade 12",
   "A-Level",
 ];
+// Switching between A-Level and Grades 7 to 12 is locked for now, because each level uses its own
+// AI tutors and allowance. When paid plans exist, set this to true for learners who paid for both.
+const BOTH_LEVELS_UNLOCKED = false;
 const LANGUAGES: LanguageAid[] = [
   "English Only",
   "English + Bemba",
@@ -162,10 +165,14 @@ export function ProfileModal({
 
           <div>
             <span className="block text-sm font-medium text-slate-700 mb-2">
-              ECZ Grade Level
+              {profile.grade === "A-Level" ? "Your level" : "ECZ Grade Level"}
             </span>
             <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 rounded-xl">
-              {GRADES.map((grade) => {
+              {GRADES.filter(
+                (g) =>
+                  BOTH_LEVELS_UNLOCKED ||
+                  (profile.grade === "A-Level") === (g === "A-Level")
+              ).map((grade) => {
                 const active = profile.grade === grade;
                 return (
                   <button
@@ -183,6 +190,11 @@ export function ProfileModal({
                 );
               })}
             </div>
+            {!BOTH_LEVELS_UNLOCKED && (
+              <p className="mt-1.5 text-[11px] text-slate-500">
+                You can move between Grades 7 to 12. Switching between A-Level and school grades is available only with a plan that covers both.
+              </p>
+            )}
           </div>
 
           <div>

@@ -1967,6 +1967,7 @@ export default function App() {
               />
               <span>Competitions</span>
             </button>
+            {profile.grade === "A-Level" && (
             <button
               type="button"
               onClick={() => navigateAppView("alevel", "blackboard")}
@@ -1979,6 +1980,7 @@ export default function App() {
               <GraduationCap className="w-3.5 h-3.5" />
               <span>A-Level</span>
             </button>
+            )}
             {isAdmin && (
               <button
                 type="button"
@@ -2049,7 +2051,9 @@ export default function App() {
               { id: "papers" as const, label: "Past Papers", icon: FileText },
               { id: "calendar" as const, label: "Calendar", icon: CalendarDays },
               { id: "competitions" as const, label: "Competitions", icon: Trophy },
-              { id: "alevel" as const, label: "A-Level", icon: GraduationCap },
+              ...(profile.grade === "A-Level"
+                ? [{ id: "alevel" as const, label: "A-Level", icon: GraduationCap }]
+                : []),
               ...(isAdmin ? [{ id: "admin" as const, label: "Admin", icon: ShieldCheck }] : []),
             ]
           ).map((item) => {
