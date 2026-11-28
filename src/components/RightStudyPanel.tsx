@@ -43,6 +43,7 @@ import { MonthlyTestsPanel } from "./MonthlyTestsPanel";
 import { StudyFlashcards } from "./StudyFlashcards";
 import { LessonPanel } from "./LessonPanel";
 import { ExamPanel } from "./ExamPanel";
+import { TopicDrill } from "./TopicDrill";
 import type { Challenge } from "../utils/challenge";
 import { StudyWeaknessesPanel } from "./StudyWeaknessesPanel";
 
@@ -611,6 +612,8 @@ export function RightStudyPanel({
         )}
 
         {activeTab === "exams" && (
+          <div className="space-y-4">
+          <TopicDrill profile={profile} />
           <ExamPanel
             profile={profile}
             weaknesses={progress.weaknesses ?? []}
@@ -619,6 +622,7 @@ export function RightStudyPanel({
             incomingChallenge={incomingChallenge}
             onChallengeHandled={onChallengeHandled}
           />
+          </div>
         )}
 
         {activeTab === "lesson" && (

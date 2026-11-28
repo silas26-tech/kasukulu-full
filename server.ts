@@ -950,6 +950,164 @@ async function startServer() {
     }
   });
 
+  // ---------------------------------------------------------------------------
+  // Topic practice: ONE topic, ONE structured question at a time, until the learner masters it.
+  // mode "ask" makes a new question; mode "check" marks the learner's working.
+  // ---------------------------------------------------------------------------
+  app.post("/api/tutor/topic-drill", async (req, res) => {
+    try {
+      const body = req.body as {
+        mode?: "ask" | "check";
+        profile?: LearnerProfile;
+        topicId?: string;
+        level?: number;
+        previous?: string[];
+        question?: string;
+        totalMarks?: number;
+        answer?: string;
+      };
+      const topic = ECZ_TOPICS.find((t) => t.id === String(body.topicId ?? ""));
+      if (!topic || !body.profile) {
+        refundAllowance(req);
+        res.status(400).json({ error: "Please choose a topic first." });
+        return;
+      }
+      const ai = getAiClient();
+      const tutor = getTutorById(topic.tutorId);
+      const profile = body.profile;
+      const examName =
+        profile.grade === "A-Level" ? "Zambian A-Level" : `ECZ ${profile.grade}`;
+      const isMaths = /math/i.test(topic.subject);
+      const system = `You are ${tutor.name}, a kind and fair ${examName} ${topic.subject} teacher. Use very simple English that a Zambian learner can understand. Write maths with plain symbols (÷, ×, x², √, fractions like 3/4) and no markdown.`;
+      const clean = (v: unknown, max: number) => String(v ?? "").trim().slice(0, max);
+
+      if (body.mode === "check") {
+        const question = clean(body.question, 1800);
+        const answer = clean(body.answer, 1800);
+        const totalMarks = Math.min(12, Math.max(1, Math.round(Number(body.totalMarks) || 6)));
+        if (!question || !answer) {
+          refundAllowance(req);
+          res.status(400).json({ error: "Write your working first, then tap Check." });
+          return;
+        }
+        const response = await generateFast(
+          ai,
+          {
+            contents: [
+              `Topic: ${topic.title} (${topic.subject}, ${examName}).`,
+              `QUESTION (${totalMarks} marks):\n${question}`,
+              `LEARNER'S WORKING AND ANSWER:\n${answer}`,
+              `Solve the question yourself first, then mark the learner's work out of ${totalMarks} like an ECZ examiner (method marks and answer marks, and follow-through marks for correct method with an earlier slip).`,
+              "Return JSON: score (whole number from 0 to the total), feedback (1 or 2 kind sentences about what they did well and the main mistake), steps (the complete correct solution as 3 to 8 separate short lines, ONE step per line, each showing what to do and the working, the last line is the final answer), tip (one short exam tip for this kind of question).",
+            ].join("\n\n"),
+            config: {
+              systemInstruction: system,
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  score: { type: Type.INTEGER },
+                  feedback: { type: Type.STRING },
+                  steps: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  tip: { type: Type.STRING },
+                },
+                required: ["score", "feedback", "steps", "tip"],
+              },
+            },
+          },
+          1100
+        );
+        const r = tidyDeep(JSON.parse((response.text ?? "{}").trim())) as {
+          score?: number;
+          feedback?: string;
+          steps?: string[];
+          tip?: string;
+        };
+        const score = Math.min(totalMarks, Math.max(0, Math.round(Number(r.score) || 0)));
+        res.json({
+          score,
+          outOf: totalMarks,
+          feedback: clean(r.feedback, 500),
+          steps: (Array.isArray(r.steps) ? r.steps : []).map((l) => clean(l, 300)).filter(Boolean).slice(0, 9),
+          tip: clean(r.tip, 300),
+        });
+        return;
+      }
+
+      const level = Math.min(3, Math.max(1, Math.round(Number(body.level) || 1)));
+      const previous = (Array.isArray(body.previous) ? body.previous : [])
+        .slice(-6)
+        .map((p) => clean(p, 160));
+      const shape =
+        level === 1
+          ? "2 parts, about 4 marks in total, straightforward, one idea only"
+          : level === 2
+          ? "3 parts, about 7 marks in total, a little harder"
+          : "3 or 4 parts, about 10 marks in total, a full exam-standard question";
+      const response = await generateFast(
+        ai,
+        {
+          contents: [
+            `Write ONE new ${isMaths ? "Paper 2 style structured" : "structured"} ${examName} exam question on this topic ONLY: "${topic.title}" (${topic.subject}). Do not mix in other topics.`,
+            `Shape: ${shape}. Show the marks for each part. Use Zambian everyday settings (kwacha, markets, farms, minibuses) when natural.`,
+            `Syllabus key terms: ${topic.keyTerms.join(", ")}.`,
+            previous.length ? `Do NOT repeat these earlier questions:\n- ${previous.join("\n- ")}` : "",
+            "Return JSON: stem (one short sentence of setting, may be empty), parts (array of {label like (a), text, marks}).",
+          ]
+            .filter(Boolean)
+            .join("\n\n"),
+          config: {
+            systemInstruction: system,
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                stem: { type: Type.STRING },
+                parts: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      label: { type: Type.STRING },
+                      text: { type: Type.STRING },
+                      marks: { type: Type.INTEGER },
+                    },
+                    required: ["label", "text", "marks"],
+                  },
+                },
+              },
+              required: ["stem", "parts"],
+            },
+          },
+        },
+        700
+      );
+      const q = tidyDeep(JSON.parse((response.text ?? "{}").trim())) as {
+        stem?: string;
+        parts?: Array<{ label?: string; text?: string; marks?: number }>;
+      };
+      const parts = (Array.isArray(q.parts) ? q.parts : [])
+        .map((p) => ({
+          label: clean(p.label, 8),
+          text: clean(p.text, 500),
+          marks: Math.min(6, Math.max(1, Math.round(Number(p.marks) || 1))),
+        }))
+        .filter((p) => p.text)
+        .slice(0, 5);
+      if (parts.length === 0) throw new Error("The question could not be prepared. Please try again.");
+      res.json({
+        stem: clean(q.stem, 400),
+        parts,
+        totalMarks: parts.reduce((n, p) => n + p.marks, 0),
+      });
+    } catch (err) {
+      refundAllowance(req);
+      const status = getHttpStatusForError(err);
+      if (status !== 429 && status !== 503) console.error("Error in /api/tutor/topic-drill:", err);
+      res.status(status).json({ error: formatErrorMessage(err) });
+    }
+  });
+
   // Generate structured blackboard summary for a topic
   app.post("/api/tutor/blackboard", async (req, res) => {
     try {
@@ -1051,7 +1209,7 @@ async function startServer() {
       const safeCustom = cleanLine(customTopic, 200);
       // The tutor is decided by the topic, so ready-made topics share one lesson per grade.
       const cacheKey = [
-        "v7",
+        "v8",
         topicId ? "" : tutorId,
         profile?.grade ?? "",
         profile?.languageAid ?? "",
@@ -1091,7 +1249,7 @@ async function startServer() {
         contents: [
           `Write a short, focused lesson on ONE single topic: "${focusTitle}" for a ${profile.grade} Zambian learner (${profile.pace} pace) following the ECZ syllabus. It should take a learner about 10 to 12 minutes to read and work through. Teach ONLY this one topic. Do NOT wander into other topics, other chapters or the wider syllabus. If the topic title is very broad, choose its single most important idea and teach only that. If you need an idea from another topic, mention it in one short sentence and move on.`,
           "TEACHING STYLE: very simple English that a Grade 7 learner can follow, like a patient teacher talking to one learner. Short sentences. Everyday words. Define every hard word the first time it appears. Build from what the learner already knows, then go a little deeper, one small idea at a time.",
-          "STRUCTURE: an introduction (2 to 4 short sentences saying what the topic is and why it matters in real life). Then exactly 5 sections. Each section covers one small idea of this topic only and has a heading, an explanation of 100 to 160 words (use blank lines between short paragraphs), a fully worked example of 50 to 80 words showing every step and the reasoning, one keyPoint sentence to remember, a checkQuestion (one short question that tests only this section) and a checkAnswer (the answer in one short sentence). Include the common mistakes learners make. At least half of the examples must use everyday Zambian life (kwacha, nshima, maize, minibuses, markets, football, villages and towns).",
+          "STRUCTURE: an introduction (2 to 4 short sentences saying what the topic is and why it matters in real life). Then exactly 5 sections. Each section covers one small idea of this topic only and has a heading, an explanation of 100 to 160 words (use blank lines between short paragraphs), a worked example. Put ONLY the problem in 'example' (one short line, for example 'Solve x² − 5x + 6 = 0'). Put the solution in 'exampleSteps': 3 to 7 separate short lines, ONE step per line, each showing what we do and the working (for example 'Step 1: Find two numbers that multiply to 6 and add to −5: −2 and −3', 'Step 2: Write the brackets: (x − 2)(x − 3) = 0'). The last line gives the final answer. Never put the whole solution in one sentence, one keyPoint sentence to remember, a checkQuestion (one short question that tests only this section) and a checkAnswer (the answer in one short sentence). Include the common mistakes learners make. At least half of the examples must use everyday Zambian life (kwacha, nshima, maize, minibuses, markets, football, villages and towns).",
           "Finish with 4 to 5 summary points.",
           `ECZ KEY THINGS: also give "mustKnow": 5 to 7 short items that a ${profile.grade} learner MUST know on this topic to score well in the ECZ exam (key definitions, formulas, rules, facts, and skills the ECZ syllabus and past papers ask for). Each item is one short sentence in simple English. Also give "examTip": one sentence on how ECZ usually asks about this topic and how to earn full marks (for example, show every step, include units, write the formula first).${topic?.keyTerms?.length ? ` Syllabus key terms for this topic: ${topic.keyTerms.join(", ")}.` : ""}`,
           "EXERCISE (it tests only what the lesson taught): 5 multiple-choice questions (exactly 4 plain-text options, no A-D prefixes, a 0-based correctIndex, and a short kind explanation) and 2 written questions. Written questions ask the learner to explain, work out, or apply an idea in their own words. Give each written question a maxMarks of 2, 3 or 4, a list of 2 to 4 markingPoints (the specific ideas or steps that earn marks) and a short modelAnswer.",
@@ -1114,6 +1272,7 @@ async function startServer() {
                     heading: { type: Type.STRING },
                     explanation: { type: Type.STRING },
                     example: { type: Type.STRING },
+                    exampleSteps: { type: Type.ARRAY, items: { type: Type.STRING } },
                     keyPoint: { type: Type.STRING },
                     checkQuestion: { type: Type.STRING },
                     checkAnswer: { type: Type.STRING },
@@ -1207,6 +1366,10 @@ async function startServer() {
           heading: str(sec?.heading, 140),
           explanation: str(sec?.explanation, 3800),
           example: str(sec?.example, 3000),
+          exampleSteps: (Array.isArray(sec?.exampleSteps) ? sec.exampleSteps : [])
+            .map((l: unknown) => str(l, 300))
+            .filter(Boolean)
+            .slice(0, 9),
           keyPoint: str(sec?.keyPoint, 300),
           checkQuestion: str(sec?.checkQuestion, 300),
           checkAnswer: str(sec?.checkAnswer, 400),
@@ -1259,8 +1422,8 @@ async function startServer() {
       }
 
       const wordCount = sections.reduce(
-        (n: number, sec: { explanation: string; example: string }) =>
-          n + (sec.explanation + " " + sec.example).split(/\s+/).length,
+        (n: number, sec: { explanation: string; example: string; exampleSteps?: string[] }) =>
+          n + (sec.explanation + " " + sec.example + " " + (sec.exampleSteps ?? []).join(" ")).split(/\s+/).length,
         0
       );
 

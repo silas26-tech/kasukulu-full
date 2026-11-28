@@ -28,6 +28,7 @@ interface LessonSection {
   heading: string;
   explanation: string;
   example: string;
+  exampleSteps?: string[];
   keyPoint: string;
   checkQuestion?: string;
   checkAnswer?: string;
@@ -145,6 +146,48 @@ function shuffleQuestion(q: QuizQuestion): QuizQuestion {
     options: order.map((i) => q.options[i]),
     correctIndex: order.indexOf(q.correctIndex),
   };
+}
+
+/** Steps for the worked example. New lessons send them; older saved lessons are split into lines. */
+function stepsOf(sec: { example: string; exampleSteps?: string[] }): { problem: string; steps: string[] } {
+  if (sec.exampleSteps && sec.exampleSteps.length > 0) {
+    return { problem: sec.example, steps: sec.exampleSteps };
+  }
+  const lines = sec.example
+    .split(/\n+/)
+    .flatMap((l) => l.split(/(?<=[.;:])\s+(?=Step\s*\d|\d+[.)]\s)/i))
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (lines.length >= 3) return { problem: "", steps: lines };
+  const sentences = sec.example
+    .split(/(?<=[.!?])\s+/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  return sentences.length >= 3
+    ? { problem: sentences[0], steps: sentences.slice(1) }
+    : { problem: "", steps: sentences.length ? sentences : [sec.example] };
+}
+
+function WorkedSteps({ sec }: { sec: { example: string; exampleSteps?: string[] } }) {
+  const { problem, steps } = stepsOf(sec);
+  return (
+    <div className="space-y-2.5 min-w-0">
+      {problem && <p className="text-sm font-semibold text-amber-950 leading-relaxed">{problem}</p>}
+      <ol className="space-y-1.5">
+        {steps.map((line, i) => {
+          const text = line.replace(/^\s*(step\s*\d+\s*[:.)-]?|\d+[.)])\s*/i, "");
+          return (
+            <li key={i} className="flex items-start gap-2.5 rounded-lg bg-white/80 border border-amber-200 px-3 py-2">
+              <span className="shrink-0 w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center tabular-nums">
+                {i + 1}
+              </span>
+              <span className="text-sm text-amber-950 leading-relaxed break-words min-w-0">{text}</span>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
 }
 
 function Paragraphs({ text, className }: { text: string; className?: string }) {
@@ -614,10 +657,7 @@ export function LessonPanel({
                     <div className="text-xs font-bold uppercase tracking-wide text-amber-800">
                       Worked example
                     </div>
-                    <Paragraphs
-                      text={sec.example}
-                      className="text-sm text-amber-950 leading-relaxed"
-                    />
+                    <WorkedSteps sec={sec} />
                   </div>
                 </div>
               )}
